@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PoultryPredict AI | Intelligence Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0f172a; --bg-card: #1e293b; --primary: #fbbf24;
+            --primary-glow: rgba(251, 191, 36, 0.4); --success: #10b981;
+            --danger: #ef4444; --text-main: #f8fafc; --text-muted: #94a3b8;
+            --sidebar-w: 260px; --radius: 20px; --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --sidebar-bg: #020617; --input-bg: #0f172a;
+        }
+
+        [data-theme="light"] {
+            --bg-dark: #f1f5f9; --bg-card: #ffffff; --sidebar-bg: #e2e8f0;
+            --text-main: #0f172a; --text-muted: #64748b; --input-bg: #f8fafc;
+            --primary: #d97706; --primary-glow: rgba(217, 119, 6, 0.2);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: var(--bg-dark); color: var(--text-main); font-family: 'Inter', sans-serif;
+            min-height: 100vh; display: flex; overflow-x: hidden;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        h1, h2, h3, h4 { font-family: 'Poppins', sans-serif; }
+
+        .mobile-header {
+            display: none; position: fixed; top: 0; left: 0; right: 0; 
+            height: 60px; background: var(--sidebar-bg); z-index: 1001; 
+            align-items: center; justify-content: space-between; padding: 0 1.5rem;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .sidebar {
+            width: var(--sidebar-w); background: var(--sidebar-bg); border-right: 1px solid rgba(0,0,0,0.05);
+            padding: 2rem 1.2rem; display: flex; flex-direction: column; position: fixed; height: 100vh; z-index: 1000;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .brand { font-size: 1.5rem; font-weight: 800; color: var(--primary); margin-bottom: 2.5rem; display: flex; align-items: center; gap: 12px; }
+        .nav-item {
+            padding: 0.8rem 1.2rem; color: var(--text-muted); text-decoration: none;
+            border-radius: 12px; margin-bottom: 0.5rem; cursor: pointer;
+            transition: var(--transition); display: flex; align-items: center; gap: 12px; font-weight: 600;
+        }
+        .nav-item:hover, .nav-item.active { background: var(--bg-card); color: var(--primary); }
+        .status-pill {
+            margin-top: auto; padding: 1rem; background: rgba(16, 185, 129, 0.1);
+            border-radius: 12px; display: flex; align-items: center; gap: 8px;
+            font-size: 0.85rem; color: var(--success); font-weight: 700;
+        }
+        .status-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 10px var(--success); }
+
+        .main-stage { margin-left: var(--sidebar-w); flex: 1; padding: 2rem; width: 100%; transition: margin 0.3s; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1rem; }
+        .header-welcome h1 { font-size: 1.8rem; font-weight: 700; }
+        .header-welcome p { color: var(--text-muted); margin-top: 4px; font-size: 0.9rem; }
+        .header-actions { display: flex; align-items: center; gap: 20px; }
+        .action-icon { font-size: 1.2rem; color: var(--text-muted); cursor: pointer; transition: var(--transition); }
+        .action-icon:hover { color: var(--primary); }
+        .profile-img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--primary); }
+
+        .dashboard-grid { display: grid; grid-template-columns: 360px 1fr; gap: 2rem; }
+        .card {
+            background: var(--bg-card); border-radius: var(--radius); padding: 1.8rem;
+            box-shadow: 0 15px 30px -10px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.03);
+            margin-bottom: 1.5rem; transition: var(--transition);
+        }
+        [data-theme="dark"] .card { box-shadow: 0 15px 30px -10px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); }
+        .card:hover { transform: translateY(-5px); }
+        .card-title { font-size: 0.85rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1.5rem; }
+
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.4rem; }
+        .form-input {
+            width: 100%; background: var(--input-bg); border: 1px solid rgba(0,0,0,0.1);
+            color: var(--text-main); padding: 0.7rem 1rem; border-radius: 12px; font-size: 0.9rem;
+            transition: var(--transition);
+        }
+        [data-theme="dark"] .form-input { border: 1px solid rgba(255,255,255,0.1); }
+        .form-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px var(--primary-glow); }
+
+        .btn-predict {
+            background: var(--primary); color: #fff; font-weight: 800; padding: 1rem;
+            border: none; border-radius: 15px; cursor: pointer; width: 100%;
+            font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;
+            box-shadow: 0 8px 20px -5px var(--primary-glow); transition: var(--transition);
+        }
+        [data-theme="dark"] .btn-predict { color: #000; }
+
+        .result-main { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #000; padding: 1.5rem; border-radius: 20px; text-align: center; margin-bottom: 1.5rem; }
+        .result-main .val { font-size: 3.5rem; font-weight: 800; }
+        .result-main .lbl { font-size: 0.9rem; font-weight: 700; text-transform: uppercase; opacity: 0.8; }
+        
+        .mini-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+        .mini-card { background: rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.05); padding: 1rem; border-radius: 18px; text-align: center; }
+        [data-theme="dark"] .mini-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); }
+        .mini-card .val { font-size: 1.2rem; font-weight: 700; color: var(--text-main); }
+        .mini-card .lbl { font-size: 0.6rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-top: 4px; }
+
+        .profit-card { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); padding: 1.2rem; border-radius: 18px; text-align: center; }
+        .profit-card .val { font-size: 2rem; font-weight: 800; color: var(--success); }
+
+        .chart-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem; }
+        .validation-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .validation-card img { width: 100%; border-radius: 12px; border: 1px solid rgba(0,0,0,0.05); }
+
+        @media (max-width: 1100px) {
+            .dashboard-grid, .chart-grid, .validation-grid { grid-template-columns: 1fr; }
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.active { transform: translateX(0); }
+            .main-stage { margin-left: 0; padding-top: 80px; }
+            .mobile-header { display: flex; }
+        }
+
+        @media (max-width: 480px) {
+            .main-stage { padding: 1rem; padding-top: 75px; }
+            .mini-grid { grid-template-columns: 1fr; }
+        }
+
+        .sidebar-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); 
+            z-index: 999; backdrop-filter: blur(4px);
+        }
+        .sidebar-overlay.active { display: block; }
+
+        #loader {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); z-index: 2000;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+        }
+    </style>
+</head>
+<body data-theme="dark">
+
+    <div id="loader">
+        <i class="fas fa-feather-pointed" style="font-size: 3rem; color: var(--primary); animation: pulse 1.5s infinite;"></i>
+        <h2 style="margin-top: 1.5rem; font-weight: 800; font-size: 1.2rem;">Analyzing Poultry Intelligence...</h2>
+    </div>
+
+    <div class="mobile-header">
+        <div style="color: var(--primary); font-weight: 800; font-size: 1.2rem;">🐔 PoultryPredict</div>
+        <div style="display:flex; gap:15px; align-items:center;">
+             <i class="fas fa-sun" style="font-size: 1.2rem; cursor: pointer; color: var(--text-muted);" onclick="toggleTheme()" id="theme-toggle-mobile"></i>
+             <i class="fas fa-bars" style="font-size: 1.5rem; cursor: pointer;" onclick="toggleSidebar()"></i>
+        </div>
+    </div>
+
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="brand">🐔 PoultryPredict AI</div>
+        <div class="nav-item active" onclick="switchTab('dashboard')"><i class="fas fa-grid-2"></i> Dashboard</div>
+        <div class="nav-item" onclick="switchTab('prediction')"><i class="fas fa-brain"></i> Prediction Center</div>
+        <div class="nav-item" onclick="switchTab('analytics')"><i class="fas fa-chart-line"></i> Analytics</div>
+        <div class="nav-item" onclick="switchTab('validation')"><i class="fas fa-vial"></i> Prof. Validation</div>
+        <div class="nav-item" onclick="switchTab('history')"><i class="fas fa-clock-rotate-left"></i> History Logs</div>
+        <div class="nav-item" onclick="exportPDF()"><i class="fas fa-file-export"></i> Export Reports</div>
+        <div class="nav-item" onclick="switchTab('settings')"><i class="fas fa-cog"></i> Settings</div>
+        <a href="/logout" class="nav-item" style="color: var(--danger); margin-top: 2rem;"><i class="fas fa-right-from-bracket"></i> Logout</a>
+        <div class="status-pill"><div class="status-dot"></div> Status: Operational</div>
+    </div>
+
+    <div class="main-stage">
+        <div class="header">
+            <div class="header-welcome">
+                <h1>Welcome, {{ username }}</h1>
+                <p>Intelligence Report • <span id="current-date"></span></p>
+            </div>
+            <div class="header-actions">
+                <i class="fas fa-sun action-icon" id="theme-toggle" onclick="toggleTheme()"></i>
+                <i class="fas fa-bell action-icon"></i>
+                <img src="https://ui-avatars.com/api/?name={{ username }}&background=fbbf24&color=000" class="profile-img">
+            </div>
+        </div>
+
+        <div id="dashboard-view" class="tab-view">
+            <div class="dashboard-grid">
+                <div class="card" id="prediction-panel">
+                    <div class="card-title">Operational Parameters</div>
+                    <!-- DEFAULT VALUES UPDATED -->
+                    <div class="form-group"><label>Number of Chickens</label><input type="number" id="Amount_of_chicken" class="form-input" value="5000"></div>
+                    <div class="form-group"><label>Feed per Bird (g)</label><input type="number" id="Feed_per_Chicken_g" class="form-input" value="110"></div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+                        <div class="form-group"><label>Temp °C</label><input type="number" id="Temperature" class="form-input" value="23"></div>
+                        <div class="form-group"><label>Hum %</label><input type="number" id="Humidity" class="form-input" value="60"></div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+                        <div class="form-group"><label>Ammonia</label><input type="number" id="Ammonia" class="form-input" value="15"></div>
+                        <div class="form-group"><label>Light</label><input type="number" id="Light_Intensity" class="form-input" value="50"></div>
+                    </div>
+                    <div class="form-group"><label>Bird Type</label><select id="Breed" class="form-input"><option value="commercial">Commercial</option><option value="desi">Desi</option><option value="misri">Misri</option></select></div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;"><div class="form-group"><label>Age (W)</label><input type="number" id="Age" class="form-input" value="28"></div><div class="form-group"><label>Season</label><select id="Season" class="form-input"><option value="spring">Spring</option><option value="summer">Summer</option><option value="winter">Winter</option></select></div></div>
+                    <!-- DEFAULT VALUES UPDATED -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;"><div class="form-group"><label>Feed PKR/kg</label><input type="number" id="Feed_Price" class="form-input" value="215"></div><div class="form-group"><label>Egg PKR/ea</label><input type="number" id="Egg_Price" class="form-input" value="24"></div></div>
+                    <button class="btn-predict" onclick="runPrediction()">🟡 RUN AI ANALYSIS</button>
+                </div>
+                <div id="results-container" style="opacity: 0.1; transition: 0.5s;">
+                    <div class="result-main"><div class="val" id="res-eggs">0</div><div class="lbl">Daily Eggs Projected</div></div>
+                    <div class="mini-grid">
+                        <div class="mini-card"><div class="val" id="res-startup">0</div><div class="lbl">Startup (PKR)</div></div>
+                        <div class="mini-card"><div class="val" id="res-feed">0</div><div class="lbl">Feed/Month (PKR)</div></div>
+                        <div class="mini-card"><div class="val" id="res-bird">0</div><div class="lbl">Birds (PKR)</div></div>
+                        <div class="mini-card"><div class="val" id="res-infra">0</div><div class="lbl">Infra (PKR)</div></div>
+                    </div>
+                    <div class="profit-card"><div class="lbl" style="font-size:0.7rem; font-weight:800; color:var(--text-muted); text-transform:uppercase;">Estimated Monthly Profit</div><div class="val" id="res-profit">0 PKR</div></div>
+                    <div id="insights-container" style="margin-top:1.5rem;"></div>
+                </div>
+            </div>
+            <div id="analytics-section">
+                <div class="chart-grid" id="charts-area" style="opacity: 0.1; transition: 0.5s;">
+                    <div class="card"><div class="card-title">Production Trend</div><div style="height: 300px;"><canvas id="trendChart"></canvas></div></div>
+                    <div class="card"><div class="card-title">Cost Breakdown</div><div style="height: 300px;"><canvas id="costChart"></canvas></div></div>
+                </div>
+                <div class="card" style="opacity: 0.1;" id="climate-card"><div class="card-title">Climate Sensitivity</div><div style="height: 250px;"><canvas id="climateChart"></canvas></div></div>
+            </div>
+        </div>
+
+        <div id="validation-view" class="tab-view" style="display: none;">
+            <div class="validation-grid">
+                <div class="card"><div class="card-title">Learning Curves</div><img src="/static/plots/learning_curves.png"></div>
+                <div class="card"><div class="card-title">Residual Plot</div><img src="/static/plots/residual_plot.png"></div>
+                <div class="card"><div class="card-title">Feature Importance</div><img src="/static/plots/feature_importance_model.png"></div>
+                <div class="card"><div class="card-title">Noise Robustness</div><img src="/static/plots/noise_simulation.png"></div>
+            </div>
+        </div>
+        <div id="history-view" class="tab-view" style="display: none;"><div class="card"><div class="card-title">History Logs</div><div style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse; margin-top: 1rem; min-width: 600px;"><thead style="text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); font-size: 0.75rem;"><tr><th style="padding: 1rem;">Time</th><th>Birds</th><th>Breed</th><th>Yield</th><th>Profit</th></tr></thead><tbody id="history-tbody"></tbody></table></div></div></div>
+    </div>
+
+    <script>
+        let charts = {};
+        document.getElementById('current-date').innerText = new Date().toLocaleDateString();
+
+        function toggleTheme() {
+            const body = document.body;
+            const icon = document.getElementById('theme-toggle');
+            const iconMob = document.getElementById('theme-toggle-mobile');
+            if (body.getAttribute('data-theme') === 'dark') {
+                body.setAttribute('data-theme', 'light');
+                icon.className = iconMob.className = 'fas fa-moon action-icon';
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                icon.className = iconMob.className = 'fas fa-sun action-icon';
+            }
+            if(lastData) renderCharts(lastData);
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.querySelector('.sidebar-overlay').classList.toggle('active');
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            const targetNav = Array.from(document.querySelectorAll('.nav-item')).find(n => n.innerText.toLowerCase().includes(tab));
+            if(targetNav) targetNav.classList.add('active');
+            document.querySelectorAll('.tab-view').forEach(v => v.style.display = 'none');
+            if(window.innerWidth <= 1100) toggleSidebar();
+            if(tab === 'dashboard') { document.getElementById('dashboard-view').style.display = 'block'; window.scrollTo({ top: 0, behavior: 'smooth' }); }
+            else if(tab === 'prediction') { document.getElementById('dashboard-view').style.display = 'block'; document.getElementById('prediction-panel').scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+            else if(tab === 'analytics') { document.getElementById('dashboard-view').style.display = 'block'; document.getElementById('analytics-section').scrollIntoView({ behavior: 'smooth' }); }
+            else if(tab === 'validation') { document.getElementById('validation-view').style.display = 'block'; }
+            else if(tab === 'history') { document.getElementById('history-view').style.display = 'block'; loadHistory(); }
+        }
+
+        let lastData = null;
+        async function runPrediction() {
+            document.getElementById('loader').style.display = 'flex';
+            const payload = {
+                Amount_of_chicken: document.getElementById('Amount_of_chicken').value, Feed_per_Chicken_g: document.getElementById('Feed_per_Chicken_g').value,
+                Temperature: document.getElementById('Temperature').value, Humidity: document.getElementById('Humidity').value,
+                Ammonia: document.getElementById('Ammonia').value, Light_Intensity: document.getElementById('Light_Intensity').value,
+                Breed: document.getElementById('Breed').value, Age: document.getElementById('Age').value, Season: document.getElementById('Season').value,
+                System_Type: 'automatic', Feed_Price_per_kg: document.getElementById('Feed_Price').value, Egg_Price_per_unit: document.getElementById('Egg_Price').value
+            };
+            try {
+                const res = await fetch('/api/predict', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+                const data = await res.json(); lastData = data;
+                setTimeout(() => { document.getElementById('loader').style.display = 'none'; revealResults(data); }, 1500);
+            } catch(e) { document.getElementById('loader').style.display = 'none'; alert("Error: " + e.message); }
+        }
+
+        function revealResults(data) {
+            document.getElementById('results-container').style.opacity = '1';
+            document.getElementById('charts-area').style.opacity = '1'; document.getElementById('climate-card').style.opacity = '1';
+            animateValue('res-eggs', 0, data.predicted_eggs, 1000);
+            animateValue('res-startup', 0, data.economics.startup_cost_pkr, 1000);
+            animateValue('res-feed', 0, data.economics.monthly_feed_cost_pkr, 1000);
+            animateValue('res-bird', 0, data.economics.bird_cost_total_pkr, 1000);
+            animateValue('res-infra', 0, data.economics.infrastructure_cost_total_pkr, 1000);
+            document.getElementById('res-profit').innerText = data.economics.monthly_profit_pkr.toLocaleString() + ' PKR';
+            renderCharts(data);
+        }
+
+        function animateValue(id, start, end, duration) {
+            const obj = document.getElementById(id); let startT = null;
+            const step = (t) => { if(!startT) startT = t; const progress = Math.min((t - startT)/duration, 1); obj.innerText = Math.floor(progress * (end - start) + start).toLocaleString(); if(progress < 1) window.requestAnimationFrame(step); };
+            window.requestAnimationFrame(step);
+        }
+
+        function renderCharts(data) {
+            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            const textColor = isDark ? '#fff' : '#000';
+            if(charts.trend) charts.trend.destroy();
+            charts.trend = new Chart(document.getElementById('trendChart'), {
+                type: 'line', data: { labels: data.trend_data.map(d => 'W' + d.age), datasets: [{ label: 'Eggs', data: data.trend_data.map(d => d.eggs), borderColor: '#fbbf24', backgroundColor: 'rgba(251, 191, 36, 0.1)', fill: true, tension: 0.4 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks:{color:textColor} }, x:{ticks:{color:textColor}} } }
+            });
+            if(charts.cost) charts.cost.destroy();
+            charts.cost = new Chart(document.getElementById('costChart'), {
+                type: 'doughnut', data: { labels: ['Feed', 'Birds', 'Infra'], datasets: [{ data: [data.economics.monthly_feed_cost_pkr, data.economics.bird_cost_total_pkr, data.economics.infrastructure_cost_total_pkr], backgroundColor: ['#fbbf24', '#10b981', '#3b82f6'] }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: textColor } } } }
+            });
+            if(charts.climate) charts.climate.destroy();
+            charts.climate = new Chart(document.getElementById('climateChart'), {
+                type: 'bar', data: { labels: ['-5°C', 'Norm', '+5°C', '-10% H', '+10% H'], datasets: [{ label: 'Var', data: [data.predicted_eggs*0.85, data.predicted_eggs, data.predicted_eggs*0.75, data.predicted_eggs*0.95, data.predicted_eggs*0.90], backgroundColor: ['#3b82f6', '#fbbf24', '#ef4444', '#10b981', '#f59e0b'] }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales:{y:{ticks:{color:textColor}}, x:{ticks:{color:textColor}}} }
+            });
+        }
+
+        async function loadHistory() {
+            const res = await fetch('/api/history'); const data = await res.json();
+            const tbody = document.getElementById('history-tbody');
+            tbody.innerHTML = data.history.map(r => `<tr style="border-bottom: 1px solid rgba(255,255,255,0.05);"><td style="padding:1rem;">${new Date(r.timestamp).toLocaleDateString()}</td><td>${r.chickens}</td><td>${r.breed}</td><td style="color:var(--primary); font-weight:700;">${r.predicted_eggs}</td><td style="color:var(--success); font-weight:700;">${(r.predicted_eggs * 22 * 30).toLocaleString()} PKR</td></tr>`).join('');
+        }
+
+        function exportPDF() {
+            const element = document.querySelector('.main-stage');
+            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            html2pdf().from(element).set({ margin: 0.2, filename: 'PoultryPredict_Report.pdf', html2canvas: { scale: 2, backgroundColor: isDark ? '#0f172a' : '#f1f5f9' }, jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' } }).save();
+        }
+    </script>
+</body>
+</html>
