@@ -3,8 +3,4 @@ flask-sqlalchemy
 pandas
 numpy
 scikit-learn
-xgboost
 gunicorn
-matplotlib
-seaborn
-openpyxl
