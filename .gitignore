@@ -7,13 +7,12 @@ venv/
 ENV/
 env/
 
-# Data (Models are now allowed for deployment)
-# models/*.pkl <--- Removed this line to allow models on Vercel
+# Data & Models (Allowed for Vercel)
 *.csv
 *.xlsx
 
-# Local Plots & Temp
-static/plots/*.png
+# Local Plots (Allowing validation plots for display)
+# static/plots/*.png <--- Removed this so they upload
 instance/
 .pytest_cache/
 
