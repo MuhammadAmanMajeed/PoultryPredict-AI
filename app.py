@@ -17,35 +17,56 @@ app = Flask(__name__)
 app.secret_key = 'your_super_secret_key_here'
 CORS(app)
 
+# Ensure models directory exists for build process
+os.makedirs('models', exist_ok=True)
+
 MODEL_PATH = 'models/egg_production_model.pkl'
 model_data = None
 
 def load_model():
     global model_data
-    if os.path.exists(MODEL_PATH):
-        with open(MODEL_PATH, 'rb') as f:
-            model_data = pickle.load(f)
-        return True
-    return False
+    try:
+        if os.path.exists(MODEL_PATH):
+            with open(MODEL_PATH, 'rb') as f:
+                model_data = pickle.load(f)
+            return True
+        else:
+            print(f"Warning: Model not found at {MODEL_PATH}")
+            return False
+    except Exception as e:
+        print(f"Error loading model: {e}")
+        return False
+
+# Initial attempt to load model
+load_model()
 
 # --- DATABASE HELPERS ---
 def get_db_connection():
-    conn = sqlite3.connect('history.db')
+    # On Vercel, the file system is read-only except for /tmp
+    db_path = 'history.db'
+    if os.environ.get('VERCEL'):
+        db_path = '/tmp/history.db'
+    
+    conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
 def init_db():
-    conn = get_db_connection()
-    conn.execute('''CREATE TABLE IF NOT EXISTS predictions_history (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, chickens INTEGER,
-        breed TEXT, age INTEGER, temp REAL, humidity REAL, predicted_eggs REAL, total_startup_cost REAL, user_id INTEGER
-    )''')
-    conn.execute('''CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL
-    )''')
-    conn.commit()
-    conn.close()
+    try:
+        conn = get_db_connection()
+        conn.execute('''CREATE TABLE IF NOT EXISTS predictions_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, chickens INTEGER,
+            breed TEXT, age INTEGER, temp REAL, humidity REAL, predicted_eggs REAL, total_startup_cost REAL, user_id INTEGER
+        )''')
+        conn.execute('''CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL
+        )''')
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Database initialization skipped or failed: {e}")
 
+# Run init_db only if not on Vercel or handle it safely
 init_db()
 
 # --- LOGIC HELPERS ---

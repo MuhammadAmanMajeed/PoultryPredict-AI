@@ -7,8 +7,8 @@ venv/
 ENV/
 env/
 
-# Data & Models
-models/*.pkl
+# Data (Models are now allowed for deployment)
+# models/*.pkl <--- Removed this line to allow models on Vercel
 *.csv
 *.xlsx
 
