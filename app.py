@@ -195,11 +195,15 @@ def predict():
             eff = min((0.7 + (raw_eff - 0.5) * 0.8) * b_mod * a_mod * s_mod, 0.91)
             trend_data.append({'age': a, 'eggs': round(eff * chickens, 0)})
 
-        db = get_db_connection()
-        db.execute('INSERT INTO predictions_history (timestamp, chickens, breed, age, temp, humidity, predicted_eggs, total_startup_cost, user_id) VALUES (?,?,?,?,?,?,?,?,?)',
-                   (datetime.datetime.now(), chickens, breed, age, temp, hum, round(prediction, 0), econ['startup_cost_pkr'], session.get('user_id')))
-        db.commit()
-        db.close()
+        # SAFE DATABASE SAVE (Optional on Vercel)
+        try:
+            db = get_db_connection()
+            db.execute('INSERT INTO predictions_history (timestamp, chickens, breed, age, temp, humidity, predicted_eggs, total_startup_cost, user_id) VALUES (?,?,?,?,?,?,?,?,?)',
+                       (datetime.datetime.now(), chickens, breed, age, temp, hum, round(prediction, 0), econ['startup_cost_pkr'], session.get('user_id')))
+            db.commit()
+            db.close()
+        except Exception as db_err:
+            print(f"Database save skipped: {db_err}")
 
         return jsonify({
             'success': True, 'predicted_eggs': round(prediction, 0),
