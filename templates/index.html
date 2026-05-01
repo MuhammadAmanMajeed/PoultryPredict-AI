@@ -43,7 +43,13 @@
             width: var(--sidebar-w); background: var(--sidebar-bg); border-right: 1px solid rgba(0,0,0,0.05);
             padding: 2rem 1.2rem; display: flex; flex-direction: column; position: fixed; height: 100vh; z-index: 1000;
             transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
         }
+
+        /* Custom scrollbar for sidebar */
+        .sidebar::-webkit-scrollbar { width: 6px; }
+        .sidebar::-webkit-scrollbar-track { background: transparent; }
+        .sidebar::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.3); border-radius: 10px; }
 
         .brand { font-size: 1.5rem; font-weight: 800; color: var(--primary); margin-bottom: 2.5rem; display: flex; align-items: center; gap: 12px; }
         .nav-item {
