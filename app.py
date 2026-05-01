@@ -165,26 +165,15 @@ def login():
         try:
             db = get_db_connection()
             user = db.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+            db.close()
             
             if user and check_password_hash(user['password_hash'], password):
                 session.update({'logged_in': True, 'user_id': user['id'], 'username': user['username']})
-                db.close()
                 return redirect(url_for('home'))
-            elif not user:
-                # Vercel Bypass: Auto-recreate account if Vercel wiped the ephemeral DB
-                hashed_pw = generate_password_hash(password)
-                cursor = db.execute('INSERT INTO users (username, password_hash) VALUES (?, ?)', (username, hashed_pw))
-                db.commit()
-                session.update({'logged_in': True, 'user_id': cursor.lastrowid, 'username': username})
-                db.close()
-                return redirect(url_for('home'))
-            
-            db.close()
+            else:
+                return render_template('login.html', error='Invalid credentials. Account does not exist or password is wrong.')
         except Exception as e:
-            # Fallback if DB doesn't exist at all
-            if username:
-                session.update({'logged_in': True, 'user_id': 1, 'username': username})
-                return redirect(url_for('home'))
+            return render_template('login.html', error='Database Error')
         return render_template('login.html', error='Invalid credentials')
     return render_template('login.html')
 
