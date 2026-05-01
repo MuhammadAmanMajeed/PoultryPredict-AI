@@ -545,24 +545,47 @@
             const data = await res.json();
             
             const resDiv = document.getElementById('diagnosis-result');
-            if(data.diagnosis.length === 0) {
+            if(!data.diagnosis || data.diagnosis.length === 0) {
                 resDiv.innerHTML = '<div style="background:rgba(255,255,255,0.05); padding:1rem; border-radius:10px;">No matching disease found. Consult a vet.</div>';
                 return;
             }
             
-            resDiv.innerHTML = data.diagnosis.map(d => `
-                <div style="background:rgba(255,255,255,0.05); padding:1rem; border-radius:10px; margin-bottom:1rem; border-left:4px solid ${d.score > 60 ? 'var(--danger)' : 'var(--warning)'}">
+            let html = '';
+            
+            // Primary Diagnosis (Highest Score)
+            const primary = data.diagnosis[0];
+            html += `
+                <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:5px; font-weight:800;">PRIMARY DIAGNOSIS</div>
+                <div style="background:rgba(239, 68, 68, 0.1); padding:1rem; border-radius:10px; margin-bottom:1rem; border-left:4px solid var(--danger)">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-weight:800; color:var(--primary);">${d.disease}</span>
-                        <span style="font-size:0.7rem; background:rgba(0,0,0,0.2); padding:2px 8px; border-radius:10px;">${d.score}% Match</span>
+                        <span style="font-weight:800; color:var(--danger); font-size:1.1rem;">${primary.disease}</span>
+                        <span style="font-size:0.7rem; background:var(--danger); color:white; padding:3px 10px; border-radius:10px; font-weight:700;">${primary.score}% Match</span>
                     </div>
-                    <p style="font-size:0.8rem; margin:0.5rem 0; line-height:1.4;">${d.treatment}</p>
+                    <p style="font-size:0.85rem; margin:0.8rem 0; line-height:1.4; color:var(--text-color);">${primary.treatment}</p>
                     <div style="margin-top:0.5rem;">
-                        <span style="font-size:0.65rem; color:var(--text-muted); display:block; margin-bottom:4px;">RECOMMENDED MEDS:</span>
-                        ${d.meds.map(m => `<span style="font-size:0.7rem; background:rgba(59, 130, 246, 0.1); color:#3b82f6; padding:2px 6px; border-radius:4px; margin-right:4px;">${m}</span>`).join('')}
+                        <span style="font-size:0.65rem; color:var(--text-muted); display:block; margin-bottom:6px;">RECOMMENDED MEDS:</span>
+                        ${primary.meds.map(m => `<span style="font-size:0.75rem; background:rgba(59, 130, 246, 0.15); color:#3b82f6; padding:4px 8px; border-radius:4px; margin-right:6px;">${m}</span>`).join('')}
                     </div>
                 </div>
-            `).join('') + '<p style="font-size:0.6rem; color:var(--text-muted); text-align:center; margin-top:1rem;">⚠️ AI diagnosis is for information only. Contact a certified veterinarian for official treatment.</p>';
+            `;
+            
+            // Secondary Diagnoses (Differential)
+            if (data.diagnosis.length > 1) {
+                html += `<div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:5px; font-weight:800; margin-top:1.5rem;">DIFFERENTIAL (ALTERNATIVE) DIAGNOSES</div>`;
+                for (let i = 1; i < data.diagnosis.length; i++) {
+                    const diff = data.diagnosis[i];
+                    html += `
+                        <div style="background:rgba(255,255,255,0.02); padding:0.8rem; border-radius:8px; margin-bottom:0.5rem; border-left:3px solid var(--warning)">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span style="font-weight:700; color:var(--primary); font-size:0.9rem;">${diff.disease}</span>
+                                <span style="font-size:0.65rem; background:rgba(0,0,0,0.3); padding:2px 8px; border-radius:10px;">${diff.score}% Match</span>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            
+            resDiv.innerHTML = html + '<p style="font-size:0.6rem; color:var(--text-muted); text-align:center; margin-top:1.5rem; border-top:1px solid rgba(255,255,255,0.05); padding-top:1rem;">⚠️ AI diagnosis is for information only. Contact a certified veterinarian for official treatment.</p>';
         }
 
         async function updateVaccinations() {

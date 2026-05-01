@@ -68,7 +68,7 @@ class FarmIntelligence:
     @staticmethod
     def diagnose_disease(symptoms):
         """
-        Simple symptom-based diagnostic engine.
+        Weighted symptom-based diagnostic engine.
         symptoms: list of strings (e.g., ['diarrhea', 'coughing'])
         """
         knowledge_base = {
@@ -88,34 +88,54 @@ class FarmIntelligence:
                 'meds': ['Amprolium', 'Toltrazuril', 'Sulfa drugs']
             },
             'Coryza': {
-                'signs': ['swollen_face', 'foul_smell', 'nasal_discharge'],
+                'signs': ['swollen_face', 'foul_smell', 'nasal_discharge', 'wet_eyes'],
                 'treatment': 'Strict biosecurity. Antibiotic treatment.',
                 'meds': ['Oxytetracycline', 'Erythromycin']
+            },
+            'Fowl Cholera': {
+                'signs': ['swollen_face', 'green_diarrhea', 'weight_loss'],
+                'treatment': 'Antibiotics in water or feed. Eliminate rodents.',
+                'meds': ['Sulfonamides', 'Tetracycline']
             }
         }
         
         results = []
+        user_symptoms_count = len(symptoms)
+        
         for disease, info in knowledge_base.items():
             matches = len(set(symptoms) & set(info['signs']))
             if matches > 0:
-                score = (matches / len(info['signs'])) * 100
+                # Weighted score: 
+                # 60% based on how many of the USER'S symptoms match this disease (Precision)
+                # 40% based on how much of the DISEASE'S profile is covered (Recall)
+                precision = (matches / user_symptoms_count)
+                recall = (matches / len(info['signs']))
+                score = ((precision * 0.6) + (recall * 0.4)) * 100
+                
                 results.append({
                     'disease': disease,
                     'score': round(score, 1),
                     'treatment': info['treatment'],
-                    'meds': info['meds']
+                    'meds': info['meds'],
+                    'matched_signs': matches
                 })
         
+        # Sort by score highest first
         return sorted(results, key=lambda x: x['score'], reverse=True)
 
     @staticmethod
     def get_vaccination_schedule(age_weeks):
+        # Comprehensive Commercial Schedule
         schedule = [
-            {'week': 1, 'vaccine': 'ND + IB (Spray/Ocular)', 'disease': 'Newcastle & Bronchitis'},
-            {'week': 2, 'vaccine': 'Gumboro (Live)', 'disease': 'IBD'},
-            {'week': 3, 'vaccine': 'ND LaSota', 'disease': 'Newcastle'},
+            {'week': 0, 'vaccine': "Marek's Disease (HVT)", 'disease': "Marek's"},
+            {'week': 1, 'vaccine': 'ND + IB (Live Spray/Ocular)', 'disease': 'Newcastle & Bronchitis'},
+            {'week': 2, 'vaccine': 'IBD / Gumboro (Live Drinking Water)', 'disease': 'Infectious Bursal Disease'},
+            {'week': 3, 'vaccine': 'ND LaSota (Booster)', 'disease': 'Newcastle'},
+            {'week': 4, 'vaccine': 'Avian Influenza (H9N2 Killed)', 'disease': 'Bird Flu'},
             {'week': 5, 'vaccine': 'IBD Booster', 'disease': 'Gumboro'},
-            {'week': 8, 'vaccine': 'Fowl Pox', 'disease': 'Pox'},
-            {'week': 16, 'vaccine': 'ND+IB+EDS (Killed)', 'disease': 'Multi-protection'}
+            {'week': 8, 'vaccine': 'Fowl Pox (Wing Web)', 'disease': 'Pox'},
+            {'week': 10, 'vaccine': 'Infectious Coryza (Killed)', 'disease': 'Coryza'},
+            {'week': 12, 'vaccine': 'Avian Encephalomyelitis (AE)', 'disease': 'AE'},
+            {'week': 16, 'vaccine': 'ND+IB+EDS (Multi-strain Killed)', 'disease': 'Multi-protection'}
         ]
         return [v for v in schedule if v['week'] >= age_weeks]
