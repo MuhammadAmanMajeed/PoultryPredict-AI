@@ -99,18 +99,28 @@ def get_biological_modifiers(breed, age, season):
     s_mod = {'spring': 1.0, 'summer': 0.95, 'autumn': 1.0, 'winter': 0.98}.get(season.lower(), 1.0)
     return b_mod, a_mod, s_mod
 
-def calculate_final_prediction(raw_efficiency, chickens, breed, age, season):
-    # Calibration to realistic biological levels (60-95%)
-    # Even in poor conditions, a healthy farm shouldn't drop below 50-60% efficiency
-    base_eff = 0.75 + ((raw_efficiency - 0.50) * 0.6)
-    base_eff = min(max(base_eff, 0.50), 0.95)
-    
+def calculate_final_prediction(raw_efficiency, chickens, breed, age, season, temp=22, humidity=60, ammonia=10):
+    # Determine the optimal biological baseline based on Breed and Age
     b_mod, a_mod, s_mod = get_biological_modifiers(breed, age, season)
     
-    # Apply modifiers but keep a floor for commercial breeds
-    final_eff = base_eff * b_mod * a_mod * s_mod
-    if breed.lower() == 'commercial':
-        final_eff = max(final_eff, 0.55) # Poor commercial farm is still ~55%
+    # Base peak efficiencies for healthy flocks
+    breed_peaks = {'commercial': 0.90, 'misri': 0.75, 'desi': 0.60}
+    optimal_eff = breed_peaks.get(breed.lower(), 0.60) * a_mod * s_mod
+    
+    # Calculate environmental penalty from the ML model
+    env_penalty = max(0, 0.85 - raw_efficiency) * 0.4 
+    
+    # Override: If environmental conditions are strictly optimal, bypass the ML penalty
+    # (Temp: 20-25C, Hum: 50-65%, Ammonia < 15ppm)
+    if 20 <= temp <= 25 and 50 <= humidity <= 65 and ammonia <= 15:
+        env_penalty = 0.0 # Perfect environment, zero stress
+        
+    # Final efficiency is the optimal biological capability minus the environmental stress penalty
+    final_eff = optimal_eff - env_penalty
+    
+    # Hard floors to prevent unrealistic crashes for healthy birds
+    floor_eff = {'commercial': 0.60, 'misri': 0.45, 'desi': 0.35}.get(breed.lower(), 0.35)
+    final_eff = min(max(final_eff, floor_eff), 0.96)
     
     return final_eff * chickens, final_eff, b_mod, s_mod
 
@@ -214,7 +224,9 @@ def predict():
         raw_eff = float(model_data['model'].predict(input_scaled)[0])
         
         # 2. Logic
-        prediction, _, b_mod, s_mod = calculate_final_prediction(raw_eff, chickens, breed, age, season)
+        prediction, _, b_mod, s_mod = calculate_final_prediction(
+            raw_eff, chickens, breed, age, season, temp, hum, float(data.get('Ammonia', 10))
+        )
         econ = calculate_economics(chickens, prediction, breed, age, data.get('System_Type', 'automatic'), 
                                    feed_g, float(data.get('Feed_Price_per_kg', 200)), float(data.get('Egg_Price_per_unit', 22)))
 
