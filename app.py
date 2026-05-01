@@ -381,6 +381,19 @@ def get_vaccinations():
     schedule = FarmIntelligence.get_vaccination_schedule(age)
     return jsonify({'success': True, 'schedule': schedule})
 
+@app.route('/api/reset_data', methods=['POST'])
+def reset_data():
+    try:
+        db = get_db_connection()
+        db.execute('DELETE FROM daily_logs')
+        db.execute('DELETE FROM predictions_history')
+        db.commit()
+        db.close()
+        return jsonify({'success': True, 'message': 'All data has been reset.'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     load_model()
     app.run(debug=True, host='0.0.0.0', port=5000)

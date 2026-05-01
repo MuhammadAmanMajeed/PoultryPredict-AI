@@ -321,7 +321,7 @@
             </div>
             <div class="card">
                 <div class="card-title">Account Management</div>
-                <button class="btn-predict" style="background:var(--danger); box-shadow:none;">RESET ALL DATA</button>
+                <button class="btn-predict" style="background:var(--danger); box-shadow:none;" onclick="resetData()">RESET ALL DATA</button>
             </div>
         </div>
     </div>
@@ -575,6 +575,23 @@
                     </div>
                 </div>
             `).join('') || '<div style="padding:2rem; text-align:center; color:var(--text-muted);">No upcoming vaccines for this age.</div>';
+        }
+
+        async function resetData() {
+            if(!confirm("Are you sure you want to delete all historical logs and monitoring data? This cannot be undone!")) return;
+            try {
+                const res = await fetch('/api/reset_data', { method: 'POST' });
+                const data = await res.json();
+                if(data.success) {
+                    alert("All data has been reset successfully.");
+                    location.reload();
+                } else {
+                    alert("Error: " + data.error);
+                }
+            } catch(e) {
+                alert("Failed to reset data.");
+                console.error(e);
+            }
         }
 
         // Initial calls
