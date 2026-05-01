@@ -158,11 +158,13 @@
     <div class="sidebar" id="sidebar">
         <div class="brand">🐔 PoultryPredict AI</div>
         <div class="nav-item active" onclick="switchTab('dashboard')"><i class="fas fa-grid-2"></i> Dashboard</div>
+        <div class="nav-item" onclick="switchTab('monitoring')"><i class="fas fa-temperature-half"></i> Farm Monitoring</div>
         <div class="nav-item" onclick="switchTab('prediction')"><i class="fas fa-brain"></i> Prediction Center</div>
-        <div class="nav-item" onclick="switchTab('analytics')"><i class="fas fa-chart-line"></i> Analytics</div>
-        <div class="nav-item" onclick="switchTab('validation')"><i class="fas fa-vial"></i> Prof. Validation</div>
+        <div class="nav-item" onclick="switchTab('market')"><i class="fas fa-chart-line-up"></i> Market Trends</div>
+        <div class="nav-item" onclick="switchTab('health')"><i class="fas fa-heartbeat"></i> Health & Meds</div>
         <div class="nav-item" onclick="switchTab('history')"><i class="fas fa-clock-rotate-left"></i> History Logs</div>
-        <div class="nav-item" onclick="exportPDF()"><i class="fas fa-file-export"></i> Export Reports</div>
+        <div class="nav-item" onclick="exportPDF()"><i class="fas fa-file-pdf"></i> PDF Report</div>
+        <a href="/api/export/csv" class="nav-item"><i class="fas fa-file-csv"></i> CSV Export</a>
         <div class="nav-item" onclick="switchTab('settings')"><i class="fas fa-cog"></i> Settings</div>
         <a href="/logout" class="nav-item" style="color: var(--danger); margin-top: 2rem;"><i class="fas fa-right-from-bracket"></i> Logout</a>
         <div class="status-pill"><div class="status-dot"></div> Status: Operational</div>
@@ -176,7 +178,14 @@
             </div>
             <div class="header-actions">
                 <i class="fas fa-sun action-icon" id="theme-toggle" onclick="toggleTheme()"></i>
-                <i class="fas fa-bell action-icon"></i>
+                <div style="position: relative;">
+                    <i class="fas fa-bell action-icon" onclick="toggleAlerts()"></i>
+                    <span id="alert-badge" style="display:none; position:absolute; top:-5px; right:-5px; background:var(--danger); color:white; border-radius:50%; width:18px; height:18px; font-size:10px; display:flex; align-items:center; justify-content:center;">0</span>
+                    <div id="alerts-dropdown" style="display:none; position:absolute; top:40px; right:0; background:var(--bg-card); width:300px; border-radius:15px; box-shadow:0 10px 30px rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); z-index:1002; padding:1rem;">
+                        <div style="font-weight:800; font-size:0.8rem; margin-bottom:1rem; color:var(--primary);">ACTIVE ALERTS</div>
+                        <div id="alerts-list" style="max-height:300px; overflow-y:auto;"></div>
+                    </div>
+                </div>
                 <img src="https://ui-avatars.com/api/?name={{ username }}&background=fbbf24&color=000" class="profile-img">
             </div>
         </div>
@@ -193,17 +202,40 @@
                         <div class="form-group"><label>Hum %</label><input type="number" id="Humidity" class="form-input" value="60"></div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
-                        <div class="form-group"><label>Ammonia</label><input type="number" id="Ammonia" class="form-input" value="15"></div>
-                        <div class="form-group"><label>Light</label><input type="number" id="Light_Intensity" class="form-input" value="50"></div>
+                        <div class="form-group"><label>Ammonia (ppm)</label><input type="number" id="Ammonia" class="form-input" value="15"></div>
+                        <div class="form-group"><label>Noise (dB)</label><input type="number" id="Noise" class="form-input" value="45"></div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+                        <div class="form-group"><label>Light (Lux)</label><input type="number" id="Light_Intensity" class="form-input" value="50"></div>
+                        <div class="form-group"><label>Light Duration (Hrs)</label><input type="number" id="Light_Duration" class="form-input" value="16"></div>
                     </div>
                     <div class="form-group"><label>Bird Type</label><select id="Breed" class="form-input"><option value="commercial">Commercial</option><option value="desi">Desi</option><option value="misri">Misri</option></select></div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;"><div class="form-group"><label>Age (W)</label><input type="number" id="Age" class="form-input" value="28"></div><div class="form-group"><label>Season</label><select id="Season" class="form-input"><option value="spring">Spring</option><option value="summer">Summer</option><option value="winter">Winter</option></select></div></div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+                        <div class="form-group"><label>Age (W)</label><input type="number" id="Age" class="form-input" value="28"></div>
+                        <div class="form-group"><label>System Type</label><select id="System_Type" class="form-input"><option value="automatic">Automatic</option><option value="manual">Manual</option></select></div>
+                    </div>
+                    <div class="form-group"><label>Season</label><select id="Season" class="form-input"><option value="spring">Spring</option><option value="summer">Summer</option><option value="winter">Winter</option></select></div>
                     <!-- DEFAULT VALUES UPDATED -->
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;"><div class="form-group"><label>Feed PKR/kg</label><input type="number" id="Feed_Price" class="form-input" value="215"></div><div class="form-group"><label>Egg PKR/ea</label><input type="number" id="Egg_Price" class="form-input" value="24"></div></div>
                     <button class="btn-predict" onclick="runPrediction()">🟡 RUN AI ANALYSIS</button>
                 </div>
+
+                <div class="card" id="logging-panel">
+                    <div class="card-title">Daily Farm Logging</div>
+                    <div class="form-group"><label>Eggs Collected</label><input type="number" id="log-eggs" class="form-input" placeholder="Total eggs today"></div>
+                    <div class="form-group"><label>Feed Consumed (kg)</label><input type="number" id="log-feed" class="form-input" placeholder="Total feed today"></div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+                        <div class="form-group"><label>Mortality</label><input type="number" id="log-mortality" class="form-input" value="0"></div>
+                        <div class="form-group"><label>Active Birds</label><input type="number" id="log-birds" class="form-input" value="5000"></div>
+                    </div>
+                    <button class="btn-predict" style="background:var(--success); box-shadow:0 8px 20px -5px rgba(16, 185, 129, 0.4);" onclick="submitDailyLog()">🟢 SAVE DAILY LOG</button>
+                </div>
                 <div id="results-container" style="opacity: 0.1; transition: 0.5s;">
-                    <div class="result-main"><div class="val" id="res-eggs">0</div><div class="lbl">Daily Eggs Projected</div></div>
+                    <div class="result-main">
+                        <div class="val" id="res-eggs">0</div>
+                        <div class="lbl">Daily Eggs Projected</div>
+                        <div id="performance-badge" style="font-size: 0.7rem; font-weight: 800; padding: 4px 10px; border-radius: 20px; background: rgba(0,0,0,0.2); display: inline-block; margin-top: 10px;">OPTIMIZING...</div>
+                    </div>
                     <div class="mini-grid">
                         <div class="mini-card"><div class="val" id="res-startup">0</div><div class="lbl">Startup (PKR)</div></div>
                         <div class="mini-card"><div class="val" id="res-feed">0</div><div class="lbl">Feed/Month (PKR)</div></div>
@@ -223,6 +255,22 @@
             </div>
         </div>
 
+        <div id="monitoring-view" class="tab-view" style="display: none;">
+            <div class="card"><div class="card-title">Environmental Trends (Last 7 Days)</div><div style="height: 400px;"><canvas id="envChart"></canvas></div></div>
+            <div class="mini-grid">
+                <div class="card"><div class="card-title">Mortality Tracker</div><div style="height: 250px;"><canvas id="mortalityChart"></canvas></div></div>
+                <div class="card"><div class="card-title">FCR Analysis</div><div style="height: 250px;"><canvas id="fcrChart"></canvas></div></div>
+            </div>
+        </div>
+
+        <div id="market-view" class="tab-view" style="display: none;">
+            <div class="card"><div class="card-title">Egg Price Forecast (Prophet/AI Model)</div><div style="height: 400px;"><canvas id="marketChart"></canvas></div></div>
+            <div class="profit-card" style="background:rgba(59, 130, 246, 0.1); border-color:rgba(59, 130, 246, 0.2);">
+                <div class="lbl">Current Market Average</div>
+                <div class="val" id="market-current-val" style="color:#3b82f6;">0 PKR</div>
+            </div>
+        </div>
+
         <div id="validation-view" class="tab-view" style="display: none;">
             <div class="validation-grid">
                 <div class="card"><div class="card-title">Learning Curves</div><img src="/static/plots/learning_curves.png"></div>
@@ -231,7 +279,45 @@
                 <div class="card"><div class="card-title">Noise Robustness</div><img src="/static/plots/noise_simulation.png"></div>
             </div>
         </div>
+        <div id="health-view" class="tab-view" style="display: none;">
+            <div class="mini-grid">
+                <div class="card">
+                    <div class="card-title">Symptom Checker (AI Diagnostic)</div>
+                    <div id="symptom-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem;">
+                        <label class="check-container"><input type="checkbox" value="green_diarrhea"> Green Diarrhea</label>
+                        <label class="check-container"><input type="checkbox" value="bloody_diarrhea"> Bloody Diarrhea</label>
+                        <label class="check-container"><input type="checkbox" value="coughing"> Coughing</label>
+                        <label class="check-container"><input type="checkbox" value="sneezing"> Sneezing</label>
+                        <label class="check-container"><input type="checkbox" value="nervous_signs"> Nervous Signs</label>
+                        <label class="check-container"><input type="checkbox" value="swollen_face"> Swollen Face</label>
+                        <label class="check-container"><input type="checkbox" value="wet_eyes"> Wet Eyes</label>
+                        <label class="check-container"><input type="checkbox" value="weight_loss"> Weight Loss</label>
+                    </div>
+                    <button class="btn-predict" onclick="runDiagnosis()">ANALYZE HEALTH</button>
+                    <div id="diagnosis-result" style="margin-top: 1.5rem;"></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Upcoming Vaccinations</div>
+                    <div id="vaccination-list"></div>
+                </div>
+            </div>
+        </div>
+        
         <div id="history-view" class="tab-view" style="display: none;"><div class="card"><div class="card-title">History Logs</div><div style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse; margin-top: 1rem; min-width: 600px;"><thead style="text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); font-size: 0.75rem;"><tr><th style="padding: 1rem;">Time</th><th>Birds</th><th>Breed</th><th>Yield</th><th>Profit</th></tr></thead><tbody id="history-tbody"></tbody></table></div></div></div>
+        
+        <div id="settings-view" class="tab-view" style="display: none;">
+            <div class="card">
+                <div class="card-title">System Settings</div>
+                <div class="form-group"><label>Farm Name</label><input type="text" class="form-input" value="My Smart Poultry Farm"></div>
+                <div class="form-group"><label>Notification Email</label><input type="email" class="form-input" value="farmer@example.com"></div>
+                <div class="form-group"><label>Default Currency</label><select class="form-input"><option>PKR</option><option>USD</option></select></div>
+                <button class="btn-predict" style="margin-top:1rem;">SAVE PREFERENCES</button>
+            </div>
+            <div class="card">
+                <div class="card-title">Account Management</div>
+                <button class="btn-predict" style="background:var(--danger); box-shadow:none;">RESET ALL DATA</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -263,11 +349,15 @@
             if(targetNav) targetNav.classList.add('active');
             document.querySelectorAll('.tab-view').forEach(v => v.style.display = 'none');
             if(window.innerWidth <= 1100) toggleSidebar();
+            
             if(tab === 'dashboard') { document.getElementById('dashboard-view').style.display = 'block'; window.scrollTo({ top: 0, behavior: 'smooth' }); }
+            else if(tab === 'monitoring') { document.getElementById('monitoring-view').style.display = 'block'; renderMonitoringCharts(); }
+            else if(tab === 'market') { document.getElementById('market-view').style.display = 'block'; renderMarketTrends(); }
+            else if(tab === 'health') { document.getElementById('health-view').style.display = 'block'; updateVaccinations(); }
             else if(tab === 'prediction') { document.getElementById('dashboard-view').style.display = 'block'; document.getElementById('prediction-panel').scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-            else if(tab === 'analytics') { document.getElementById('dashboard-view').style.display = 'block'; document.getElementById('analytics-section').scrollIntoView({ behavior: 'smooth' }); }
-            else if(tab === 'validation') { document.getElementById('validation-view').style.display = 'block'; }
             else if(tab === 'history') { document.getElementById('history-view').style.display = 'block'; loadHistory(); }
+            else if(tab === 'settings') { document.getElementById('settings-view').style.display = 'block'; }
+            else if(tab === 'validation') { document.getElementById('validation-view').style.display = 'block'; }
         }
 
         let lastData = null;
@@ -276,9 +366,10 @@
             const payload = {
                 Amount_of_chicken: document.getElementById('Amount_of_chicken').value, Feed_per_Chicken_g: document.getElementById('Feed_per_Chicken_g').value,
                 Temperature: document.getElementById('Temperature').value, Humidity: document.getElementById('Humidity').value,
-                Ammonia: document.getElementById('Ammonia').value, Light_Intensity: document.getElementById('Light_Intensity').value,
+                Ammonia: document.getElementById('Ammonia').value, Noise: document.getElementById('Noise').value,
+                Light_Intensity: document.getElementById('Light_Intensity').value, Light_Duration: document.getElementById('Light_Duration').value,
                 Breed: document.getElementById('Breed').value, Age: document.getElementById('Age').value, Season: document.getElementById('Season').value,
-                System_Type: 'automatic', Feed_Price_per_kg: document.getElementById('Feed_Price').value, Egg_Price_per_unit: document.getElementById('Egg_Price').value
+                System_Type: document.getElementById('System_Type').value, Feed_Price_per_kg: document.getElementById('Feed_Price').value, Egg_Price_per_unit: document.getElementById('Egg_Price').value
             };
             try {
                 const res = await fetch('/api/predict', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
@@ -296,6 +387,15 @@
             animateValue('res-bird', 0, data.economics.bird_cost_total_pkr, 1000);
             animateValue('res-infra', 0, data.economics.infrastructure_cost_total_pkr, 1000);
             document.getElementById('res-profit').innerText = data.economics.monthly_profit_pkr.toLocaleString() + ' PKR';
+            
+            // Performance Benchmark Logic
+            const badge = document.getElementById('performance-badge');
+            const eff = data.predicted_eggs / document.getElementById('Amount_of_chicken').value;
+            if(eff >= 0.8) { badge.innerText = 'EXCELLENT PRODUCTION'; badge.style.color = '#10b981'; }
+            else if(eff >= 0.7) { badge.innerText = 'GOOD PRODUCTION'; badge.style.color = '#fbbf24'; }
+            else if(eff >= 0.5) { badge.innerText = 'AVERAGE PRODUCTION'; badge.style.color = '#f59e0b'; }
+            else { badge.innerText = 'LOW PRODUCTION / HIGH RISK'; badge.style.color = '#ef4444'; }
+            
             renderCharts(data);
         }
 
@@ -325,17 +425,155 @@
             });
         }
 
-        async function loadHistory() {
-            const res = await fetch('/api/history'); const data = await res.json();
-            const tbody = document.getElementById('history-tbody');
-            tbody.innerHTML = data.history.map(r => `<tr style="border-bottom: 1px solid rgba(255,255,255,0.05);"><td style="padding:1rem;">${new Date(r.timestamp).toLocaleDateString()}</td><td>${r.chickens}</td><td>${r.breed}</td><td style="color:var(--primary); font-weight:700;">${r.predicted_eggs}</td><td style="color:var(--success); font-weight:700;">${(r.predicted_eggs * 22 * 30).toLocaleString()} PKR</td></tr>`).join('');
+        async function submitDailyLog() {
+            const payload = {
+                eggs: document.getElementById('log-eggs').value,
+                feed_kg: document.getElementById('log-feed').value,
+                mortality: document.getElementById('log-mortality').value,
+                chickens: document.getElementById('log-birds').value,
+                temp: document.getElementById('Temperature').value,
+                humidity: document.getElementById('Humidity').value,
+                ammonia: document.getElementById('Ammonia').value,
+                date: new Date().toISOString().split('T')[0]
+            };
+            try {
+                const res = await fetch('/api/logs', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+                const data = await res.json();
+                if(data.success) { alert("Daily log saved successfully!"); fetchAlerts(); }
+            } catch(e) { alert("Error saving log: " + e.message); }
         }
 
-        function exportPDF() {
-            const element = document.querySelector('.main-stage');
-            const isDark = document.body.getAttribute('data-theme') === 'dark';
-            html2pdf().from(element).set({ margin: 0.2, filename: 'PoultryPredict_Report.pdf', html2canvas: { scale: 2, backgroundColor: isDark ? '#0f172a' : '#f1f5f9' }, jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' } }).save();
+        async function fetchAlerts() {
+            const res = await fetch('/api/alerts');
+            const data = await res.json();
+            const badge = document.getElementById('alert-badge');
+            const list = document.getElementById('alerts-list');
+            badge.innerText = data.alerts.length;
+            badge.style.display = data.alerts.length > 0 ? 'flex' : 'none';
+            list.innerHTML = data.alerts.map(a => `<div style="padding:0.8rem; border-bottom:1px solid rgba(255,255,255,0.05); font-size:0.75rem;">
+                <div style="color:var(--primary); font-weight:800; margin-bottom:4px;">${a.type}</div>
+                <div>${a.message}</div>
+                <div style="color:var(--text-muted); font-size:0.6rem; margin-top:4px;">${new Date(a.timestamp).toLocaleString()}</div>
+            </div>`).join('') || '<div style="text-align:center; color:var(--text-muted); padding:1rem;">No active alerts</div>';
         }
+
+        function toggleAlerts() {
+            const drop = document.getElementById('alerts-dropdown');
+            drop.style.display = drop.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function renderMarketTrends() {
+            const res = await fetch('/api/market_trends');
+            const data = await res.json();
+            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            const textColor = isDark ? '#fff' : '#000';
+            
+            document.getElementById('market-current-val').innerText = data.current_price + ' PKR';
+            
+            if(charts.market) charts.market.destroy();
+            charts.market = new Chart(document.getElementById('marketChart'), {
+                type: 'line',
+                data: {
+                    labels: [...data.history.map((_, i) => 'Day ' + (i+1)), ...data.forecast.map((_, i) => 'Next ' + (i+1))],
+                    datasets: [
+                        { label: 'Historical', data: data.history, borderColor: '#3b82f6', backgroundColor: 'transparent', tension: 0.4 },
+                        { label: 'AI Forecast', data: [...new Array(data.history.length-1).fill(null), data.history[data.history.length-1], ...data.forecast], borderColor: '#fbbf24', borderDash: [5, 5], backgroundColor: 'transparent', tension: 0.4 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales:{y:{ticks:{color:textColor}}, x:{ticks:{color:textColor}}} }
+            });
+        }
+
+        async function renderMonitoringCharts() {
+            // Simulated monitoring data for demo
+            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            const textColor = isDark ? '#fff' : '#000';
+            
+            if(charts.env) charts.env.destroy();
+            charts.env = new Chart(document.getElementById('envChart'), {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [
+                        { label: 'Temp', data: [22, 23, 24, 22, 21, 23, 22], borderColor: '#ef4444' },
+                        { label: 'Humidity', data: [60, 62, 65, 61, 59, 60, 61], borderColor: '#3b82f6' }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales:{y:{ticks:{color:textColor}}, x:{ticks:{color:textColor}}} }
+            });
+
+            if(charts.mortality) charts.mortality.destroy();
+            charts.mortality = new Chart(document.getElementById('mortalityChart'), {
+                type: 'bar',
+                data: { labels: ['W1', 'W2', 'W3', 'W4'], datasets: [{ label: 'Mortality', data: [5, 3, 2, 8], backgroundColor: '#ef4444' }] },
+                options: { responsive: true, maintainAspectRatio: false, scales:{y:{ticks:{color:textColor}}, x:{ticks:{color:textColor}}} }
+            });
+
+            if(charts.fcr) charts.fcr.destroy();
+            charts.fcr = new Chart(document.getElementById('fcrChart'), {
+                type: 'line',
+                data: { labels: ['W1', 'W2', 'W3', 'W4'], datasets: [{ label: 'FCR Index', data: [1.8, 1.75, 1.72, 1.78], borderColor: '#10b981', tension: 0.4 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales:{y:{ticks:{color:textColor}}, x:{ticks:{color:textColor}}} }
+            });
+        }
+
+        async function loadHistory() {
+            try {
+                const res = await fetch('/api/history');
+                const data = await res.json();
+                const tbody = document.getElementById('history-tbody');
+                tbody.innerHTML = data.history.map(r => `<tr style="border-bottom: 1px solid rgba(255,255,255,0.05);"><td style="padding:1rem;">${new Date(r.timestamp).toLocaleDateString()}</td><td>${r.chickens}</td><td>${r.breed}</td><td style="color:var(--primary); font-weight:700;">${r.predicted_eggs}</td><td style="color:var(--success); font-weight:700;">${(r.predicted_eggs * 22 * 30).toLocaleString()} PKR</td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center; padding:2rem; color:var(--text-muted);">No records found</td></tr>';
+            } catch(e) { console.error("History Load Error:", e); }
+        }
+
+        async function runDiagnosis() {
+            const checks = document.querySelectorAll('#symptom-list input:checked');
+            const symptoms = Array.from(checks).map(c => c.value);
+            if(symptoms.length === 0) return alert("Please select at least one symptom.");
+            
+            const res = await fetch('/api/health/diagnose', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({symptoms}) });
+            const data = await res.json();
+            
+            const resDiv = document.getElementById('diagnosis-result');
+            if(data.diagnosis.length === 0) {
+                resDiv.innerHTML = '<div style="background:rgba(255,255,255,0.05); padding:1rem; border-radius:10px;">No matching disease found. Consult a vet.</div>';
+                return;
+            }
+            
+            resDiv.innerHTML = data.diagnosis.map(d => `
+                <div style="background:rgba(255,255,255,0.05); padding:1rem; border-radius:10px; margin-bottom:1rem; border-left:4px solid ${d.score > 60 ? 'var(--danger)' : 'var(--warning)'}">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-weight:800; color:var(--primary);">${d.disease}</span>
+                        <span style="font-size:0.7rem; background:rgba(0,0,0,0.2); padding:2px 8px; border-radius:10px;">${d.score}% Match</span>
+                    </div>
+                    <p style="font-size:0.8rem; margin:0.5rem 0; line-height:1.4;">${d.treatment}</p>
+                    <div style="margin-top:0.5rem;">
+                        <span style="font-size:0.65rem; color:var(--text-muted); display:block; margin-bottom:4px;">RECOMMENDED MEDS:</span>
+                        ${d.meds.map(m => `<span style="font-size:0.7rem; background:rgba(59, 130, 246, 0.1); color:#3b82f6; padding:2px 6px; border-radius:4px; margin-right:4px;">${m}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('') + '<p style="font-size:0.6rem; color:var(--text-muted); text-align:center; margin-top:1rem;">⚠️ AI diagnosis is for information only. Contact a certified veterinarian for official treatment.</p>';
+        }
+
+        async function updateVaccinations() {
+            const age = document.getElementById('Age').value;
+            const res = await fetch('/api/health/vaccinations?age=' + age);
+            const data = await res.json();
+            const list = document.getElementById('vaccination-list');
+            list.innerHTML = data.schedule.map(v => `
+                <div style="padding:1rem; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; align-items:center; gap:1rem;">
+                    <div style="background:var(--primary); color:#000; width:35px; height:35px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:0.75rem;">W${v.week}</div>
+                    <div>
+                        <div style="font-weight:700; font-size:0.85rem;">${v.vaccine}</div>
+                        <div style="font-size:0.7rem; color:var(--text-muted);">Against ${v.disease}</div>
+                    </div>
+                </div>
+            `).join('') || '<div style="padding:2rem; text-align:center; color:var(--text-muted);">No upcoming vaccines for this age.</div>';
+        }
+
+        // Initial calls
+        fetchAlerts();
+        setInterval(fetchAlerts, 30000); // Check every 30s
     </script>
 </body>
 </html>

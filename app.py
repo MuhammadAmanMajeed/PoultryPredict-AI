@@ -10,8 +10,11 @@ import pandas as pd
 import numpy as np
 import pickle
 import os
-import sqlite3
 import datetime
+import sqlite3
+import csv
+import io
+from forecaster import FarmIntelligence
 
 app = Flask(__name__)
 app.secret_key = 'your_super_secret_key_here'
@@ -58,8 +61,18 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, chickens INTEGER,
             breed TEXT, age INTEGER, temp REAL, humidity REAL, predicted_eggs REAL, total_startup_cost REAL, user_id INTEGER
         )''')
+        conn.execute('''CREATE TABLE IF NOT EXISTS daily_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, date DATE, chickens INTEGER, eggs INTEGER, 
+            feed_kg REAL, mortality INTEGER, temp REAL, humidity REAL, ammonia REAL, user_id INTEGER
+        )''')
+        conn.execute('''CREATE TABLE IF NOT EXISTS market_prices (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, date DATE, egg_price REAL, feed_price REAL
+        )''')
+        conn.execute('''CREATE TABLE IF NOT EXISTS alerts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, type TEXT, message TEXT, user_id INTEGER, is_read INTEGER DEFAULT 0
+        )''')
         conn.execute('''CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL
+            id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, role TEXT DEFAULT 'farmer'
         )''')
         conn.commit()
         conn.close()
@@ -87,12 +100,18 @@ def get_biological_modifiers(breed, age, season):
     return b_mod, a_mod, s_mod
 
 def calculate_final_prediction(raw_efficiency, chickens, breed, age, season):
-    # Calibration to realistic biological levels (70-95%)
-    base_eff = 0.70 + ((raw_efficiency - 0.50) * 0.8)
-    base_eff = min(max(base_eff, 0.40), 0.96)
+    # Calibration to realistic biological levels (60-95%)
+    # Even in poor conditions, a healthy farm shouldn't drop below 50-60% efficiency
+    base_eff = 0.75 + ((raw_efficiency - 0.50) * 0.6)
+    base_eff = min(max(base_eff, 0.50), 0.95)
     
     b_mod, a_mod, s_mod = get_biological_modifiers(breed, age, season)
-    final_eff = min(base_eff * b_mod * a_mod * s_mod, 0.91)
+    
+    # Apply modifiers but keep a floor for commercial breeds
+    final_eff = base_eff * b_mod * a_mod * s_mod
+    if breed.lower() == 'commercial':
+        final_eff = max(final_eff, 0.55) # Poor commercial farm is still ~55%
+    
     return final_eff * chickens, final_eff, b_mod, s_mod
 
 def calculate_economics(chickens, prediction, breed, age, system_type, feed_per_bird_g, feed_price, egg_price):
@@ -100,9 +119,10 @@ def calculate_economics(chickens, prediction, breed, age, system_type, feed_per_
     monthly_feed_cost = daily_feed * 30 * feed_price
     
     # Startup costs
-    base_costs = {'commercial': 150, 'misri': 100, 'desi': 120}
-    bird_cost = base_costs.get(breed.lower(), 120) + max(0, (min(age, 24) - 1) * 40)
-    infra_cost = 1500 if system_type == 'manual' else 4000
+    # Realistic Market Rates
+    base_costs = {'commercial': 120, 'misri': 80, 'desi': 100}
+    bird_cost = base_costs.get(breed.lower(), 100) + max(0, (min(age, 22) - 1) * 35)
+    infra_cost = 800 if system_type == 'manual' else 2200
     total_startup = (bird_cost + infra_cost) * chickens
     
     monthly_rev = prediction * egg_price * 30
@@ -184,7 +204,9 @@ def predict():
         input_data = {
             'Amount_of_chicken': chickens, 'Amount_of_Feeding': (feed_g/1000)*chickens,
             'Ammonia': float(data.get('Ammonia', 10)), 'Temperature': temp, 'Humidity': hum,
-            'Light_Intensity': float(data.get('Light_Intensity', 50)), 'Noise': float(data.get('Noise', 40)),
+            'Light_Intensity': float(data.get('Light_Intensity', 50)), 
+            'Light_Duration': float(data.get('Light_Duration', 16)), # New feature
+            'Noise': float(data.get('Noise', 40)),
             'Feed_per_Chicken': feed_g/1000,
             'Environmental_Stress_Index': (abs(temp-22)/10 + abs(hum-60)/20 + float(data.get('Ammonia', 10))/25)
         }
@@ -259,6 +281,93 @@ def get_history():
 @app.route('/api/health', methods=['GET'])
 def health_check():
     return jsonify({'status': 'healthy', 'model_loaded': model_data is not None})
+
+# --- NEW INTELLIGENT ROUTES ---
+
+@app.route('/api/logs', methods=['POST'])
+def add_log():
+    if 'logged_in' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    try:
+        data = request.get_json()
+        db = get_db_connection()
+        
+        # Check for anomalies before saving
+        history = db.execute('SELECT eggs FROM daily_logs WHERE user_id = ? ORDER BY id DESC LIMIT 14', (session.get('user_id'),)).fetchall()
+        history_df = pd.DataFrame([dict(r) for r in history])
+        
+        is_anomaly, z = FarmIntelligence.detect_anomalies(history_df, float(data.get('eggs', 0)))
+        if is_anomaly:
+            db.execute('INSERT INTO alerts (timestamp, type, message, user_id) VALUES (?, ?, ?, ?)',
+                       (datetime.datetime.now(), 'Disease Risk', f'Significant production drop detected (Z-score: {round(z, 2)}). Monitor for disease.', session.get('user_id')))
+        
+        # Check environmental risks
+        env_alerts = FarmIntelligence.check_environmental_risks(float(data.get('temp', 22)), float(data.get('humidity', 60)), float(data.get('ammonia', 10)))
+        for a_type, msg in env_alerts:
+            db.execute('INSERT INTO alerts (timestamp, type, message, user_id) VALUES (?, ?, ?, ?)',
+                       (datetime.datetime.now(), a_type, msg, session.get('user_id')))
+
+        db.execute('''INSERT INTO daily_logs (date, chickens, eggs, feed_kg, mortality, temp, humidity, ammonia, user_id) 
+                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                   (data.get('date', datetime.date.today().isoformat()), data.get('chickens'), data.get('eggs'), 
+                    data.get('feed_kg'), data.get('mortality'), data.get('temp'), data.get('humidity'), 
+                    data.get('ammonia'), session.get('user_id')))
+        db.commit()
+        db.close()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/alerts', methods=['GET'])
+def get_alerts():
+    if 'logged_in' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    db = get_db_connection()
+    rows = db.execute('SELECT * FROM alerts WHERE user_id = ? AND is_read = 0 ORDER BY timestamp DESC', (session.get('user_id'),)).fetchall()
+    db.close()
+    return jsonify({'success': True, 'alerts': [dict(r) for r in rows]})
+
+@app.route('/api/market_trends', methods=['GET'])
+def get_market_trends():
+    # Simulate historical data
+    historical_prices = [22, 23, 22.5, 24, 25, 24.5, 26, 25.5, 27, 28]
+    forecast = FarmIntelligence.forecast_market_prices(historical_prices)
+    return jsonify({
+        'success': True,
+        'history': historical_prices,
+        'forecast': forecast,
+        'current_price': historical_prices[-1]
+    })
+
+@app.route('/api/export/csv')
+def export_csv():
+    if 'logged_in' not in session: return "Unauthorized", 401
+    db = get_db_connection()
+    rows = db.execute('SELECT * FROM daily_logs WHERE user_id = ?', (session.get('user_id'),)).fetchall()
+    db.close()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['ID', 'Date', 'Chickens', 'Eggs', 'Feed_KG', 'Mortality', 'Temp', 'Humidity', 'Ammonia', 'User_ID'])
+    for row in rows:
+        writer.writerow(list(row))
+    
+    output.seek(0)
+    return output.getvalue(), 200, {
+        'Content-Type': 'text/csv',
+        'Content-Disposition': 'attachment; filename=poultry_farm_report.csv'
+    }
+
+@app.route('/api/health/diagnose', methods=['POST'])
+def diagnose_health():
+    data = request.json
+    symptoms = data.get('symptoms', [])
+    diagnosis = FarmIntelligence.diagnose_disease(symptoms)
+    return jsonify({'success': True, 'diagnosis': diagnosis})
+
+@app.route('/api/health/vaccinations', methods=['GET'])
+def get_vaccinations():
+    age = int(request.args.get('age', 1))
+    schedule = FarmIntelligence.get_vaccination_schedule(age)
+    return jsonify({'success': True, 'schedule': schedule})
 
 if __name__ == '__main__':
     load_model()

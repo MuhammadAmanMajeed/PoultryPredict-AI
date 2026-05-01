@@ -37,6 +37,7 @@ class EggProductionPredictor:
             'Temperature',
             'Humidity',
             'Light_Intensity',
+            'Light_Duration',
             'Noise',
             'Feed_per_Chicken',
             'Environmental_Stress_Index'
@@ -48,13 +49,32 @@ class EggProductionPredictor:
         else:
             self.df = pd.read_csv(self.file_path)
 
-        if 'active_birds' in self.df.columns:
+        if 'Active_Birds' in self.df.columns:
+            self.df.rename(columns={
+                'Active_Birds': 'Amount_of_chicken',
+                'Amount_of_Feeding_kg': 'Amount_of_Feeding',
+                'Ammonia_ppm': 'Ammonia',
+                'Temperature_C': 'Temperature',
+                'Humidity_pct': 'Humidity',
+                'Light_Intensity_lux': 'Light_Intensity',
+                'Eggs_Produced': 'Total_egg_production'
+            }, inplace=True)
+        elif 'active_birds' in self.df.columns:
             self.df.rename(columns={'active_birds': 'Amount_of_chicken'}, inplace=True)
 
         print("Dataset Loaded Successfully")
 
     def feature_engineering(self):
         np.random.seed(42)
+        
+        # Synthesize missing features if they don't exist
+        if 'Light_Duration' not in self.df.columns:
+            # Typical poultry lighting is 14-16 hours
+            self.df['Light_Duration'] = np.random.uniform(12, 17, len(self.df))
+        
+        if 'Noise' not in self.df.columns:
+            self.df['Noise'] = np.random.uniform(30, 60, len(self.df))
+
         noise = np.random.normal(0, 0.02, len(self.df))
         self.df['Total_egg_production'] = self.df['Total_egg_production'] * (1 + noise)
         self.df['Total_egg_production'] = np.clip(self.df['Total_egg_production'], 0, self.df['Amount_of_chicken'])
