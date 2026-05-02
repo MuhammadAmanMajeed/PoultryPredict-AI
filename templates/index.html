@@ -551,15 +551,32 @@
             }
             
             let html = '';
+            const sevColor = sev => sev === 'Critical' ? 'var(--danger)' : sev === 'High' ? '#f59e0b' : '#3b82f6';
             
             // Primary Diagnosis (Highest Score)
             const primary = data.diagnosis[0];
+            const isUncertain = primary.score < 50;
+            
+            if(isUncertain) {
+                html += `
+                <div style="background:rgba(245, 158, 11, 0.1); border-left:4px solid #f59e0b; padding:1rem; border-radius:10px; margin-bottom:1rem;">
+                    <div style="color:#f59e0b; font-weight:900; font-size:1.1rem; display:flex; align-items:center; gap:10px;">
+                        <i class="fas fa-exclamation-triangle"></i> UNCERTAIN DIAGNOSIS
+                    </div>
+                    <p style="font-size:0.85rem; margin-top:0.5rem; color:var(--text-color);">The system confidence is below 50%. The selected symptoms are too vague or don't strongly match a single known disease profile. <b>Please consult a certified veterinarian immediately.</b></p>
+                </div>
+                `;
+            }
+            
             html += `
-                <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:5px; font-weight:800;">PRIMARY DIAGNOSIS</div>
-                <div style="background:rgba(239, 68, 68, 0.1); padding:1rem; border-radius:10px; margin-bottom:1rem; border-left:4px solid var(--danger)">
+                <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:5px; font-weight:800;">${isUncertain ? 'TOP POTENTIAL MATCH' : 'PRIMARY DIAGNOSIS'}</div>
+                <div style="background:rgba(239, 68, 68, 0.05); padding:1rem; border-radius:10px; margin-bottom:1rem; border-left:4px solid ${isUncertain ? '#f59e0b' : 'var(--danger)'}">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-weight:800; color:var(--danger); font-size:1.1rem;">${primary.disease}</span>
-                        <span style="font-size:0.7rem; background:var(--danger); color:white; padding:3px 10px; border-radius:10px; font-weight:700;">${primary.score}% Match</span>
+                        <span style="font-weight:800; color:${isUncertain ? '#f59e0b' : 'var(--danger)'}; font-size:1.1rem;">${primary.disease}</span>
+                        <div style="display:flex; gap:5px; align-items:center;">
+                            <span style="font-size:0.6rem; background:${sevColor(primary.severity)}; color:white; padding:2px 6px; border-radius:4px; font-weight:800;">${primary.severity.toUpperCase()}</span>
+                            <span style="font-size:0.7rem; background:rgba(0,0,0,0.3); color:white; padding:3px 10px; border-radius:10px; font-weight:700;">${primary.score}% Match</span>
+                        </div>
                     </div>
                     <p style="font-size:0.85rem; margin:0.8rem 0; line-height:1.4; color:var(--text-color);">${primary.treatment}</p>
                     <div style="margin-top:0.5rem;">
@@ -577,7 +594,10 @@
                     html += `
                         <div style="background:rgba(255,255,255,0.02); padding:0.8rem; border-radius:8px; margin-bottom:0.5rem; border-left:3px solid var(--warning)">
                             <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <span style="font-weight:700; color:var(--primary); font-size:0.9rem;">${diff.disease}</span>
+                                <div style="display:flex; flex-direction:column;">
+                                    <span style="font-weight:700; color:var(--primary); font-size:0.9rem;">${diff.disease}</span>
+                                    <span style="font-size:0.6rem; color:${sevColor(diff.severity)}; font-weight:800; margin-top:3px;">Severity: ${diff.severity}</span>
+                                </div>
                                 <span style="font-size:0.65rem; background:rgba(0,0,0,0.3); padding:2px 8px; border-radius:10px;">${diff.score}% Match</span>
                             </div>
                         </div>

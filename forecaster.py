@@ -69,31 +69,36 @@ class FarmIntelligence:
     def diagnose_disease(symptoms):
         """
         Weighted symptom-based diagnostic engine.
-        symptoms: list of strings (e.g., ['diarrhea', 'coughing'])
+        symptoms: list of strings (e.g., ['green_diarrhea', 'coughing'])
         """
         knowledge_base = {
             'Newcastle Disease (ND)': {
-                'signs': ['green_diarrhea', 'nervous_signs', 'coughing', 'gasping'],
+                'signs': {'green_diarrhea': 2.5, 'nervous_signs': 2.0, 'coughing': 1.0, 'gasping': 1.0},
+                'severity': 'Critical',
                 'treatment': 'No cure for ND. Support with vitamins and electrolytes. Vaccinate healthy birds immediately.',
                 'meds': ['Vitamin AD3E', 'Electrolytes', 'Immune Boosters']
             },
             'Infectious Bronchitis (IB)': {
-                'signs': ['sneezing', 'wet_eyes', 'misshapen_eggs', 'coughing'],
+                'signs': {'misshapen_eggs': 2.0, 'sneezing': 1.5, 'wet_eyes': 1.0, 'coughing': 1.0},
+                'severity': 'High',
                 'treatment': 'Antibiotics to prevent secondary infections. Increase room temperature.',
                 'meds': ['Tylosin', 'Doxycycline', 'Menthol spray']
             },
             'Coccidiosis': {
-                'signs': ['bloody_diarrhea', 'huddled_birds', 'weight_loss'],
+                'signs': {'bloody_diarrhea': 3.0, 'huddled_birds': 1.5, 'weight_loss': 1.0},
+                'severity': 'High',
                 'treatment': 'Anticoccidial drugs in water. Keep litter dry.',
                 'meds': ['Amprolium', 'Toltrazuril', 'Sulfa drugs']
             },
             'Coryza': {
-                'signs': ['swollen_face', 'foul_smell', 'nasal_discharge', 'wet_eyes'],
+                'signs': {'swollen_face': 2.0, 'foul_smell': 2.0, 'nasal_discharge': 1.5, 'wet_eyes': 1.0},
+                'severity': 'Medium',
                 'treatment': 'Strict biosecurity. Antibiotic treatment.',
                 'meds': ['Oxytetracycline', 'Erythromycin']
             },
             'Fowl Cholera': {
-                'signs': ['swollen_face', 'green_diarrhea', 'weight_loss'],
+                'signs': {'swollen_face': 1.5, 'green_diarrhea': 1.5, 'weight_loss': 1.0},
+                'severity': 'High',
                 'treatment': 'Antibiotics in water or feed. Eliminate rodents.',
                 'meds': ['Sulfonamides', 'Tetracycline']
             }
@@ -101,31 +106,39 @@ class FarmIntelligence:
         
         results = []
         user_symptoms_count = len(symptoms)
+        if user_symptoms_count == 0: return []
         
         for disease, info in knowledge_base.items():
-            matches = len(set(symptoms) & set(info['signs']))
-            if matches > 0:
-                # Weighted score: 
-                # 60% based on how many of the USER'S symptoms match this disease (Precision)
-                # 40% based on how much of the DISEASE'S profile is covered (Recall)
-                precision = (matches / user_symptoms_count)
-                recall = (matches / len(info['signs']))
-                score = ((precision * 0.6) + (recall * 0.4)) * 100
+            disease_symptoms = info['signs']
+            matched_symptoms = [s for s in symptoms if s in disease_symptoms]
+            
+            if matched_symptoms:
+                matched_weight = sum(disease_symptoms[s] for s in matched_symptoms)
+                total_disease_weight = sum(disease_symptoms.values())
+                
+                # Weight contribution:
+                # 1. How much of the disease's "core identity" is covered (recall)
+                recall = matched_weight / total_disease_weight
+                # 2. How many of the user's symptoms fit this disease (precision)
+                precision = len(matched_symptoms) / user_symptoms_count
+                
+                score = ((precision * 0.4) + (recall * 0.6)) * 100
                 
                 results.append({
                     'disease': disease,
+                    'severity': info['severity'],
                     'score': round(score, 1),
                     'treatment': info['treatment'],
                     'meds': info['meds'],
-                    'matched_signs': matches
+                    'matched_signs': len(matched_symptoms)
                 })
         
-        # Sort by score highest first
-        return sorted(results, key=lambda x: x['score'], reverse=True)
+        # Sort by score descending, then alphabetically by disease name (Deterministic Lock)
+        return sorted(results, key=lambda x: (-x['score'], x['disease']))
 
     @staticmethod
     def get_vaccination_schedule(age_weeks):
-        # Comprehensive Commercial Schedule
+        # Comprehensive Commercial Schedule including Adult Boosters
         schedule = [
             {'week': 0, 'vaccine': "Marek's Disease (HVT)", 'disease': "Marek's"},
             {'week': 1, 'vaccine': 'ND + IB (Live Spray/Ocular)', 'disease': 'Newcastle & Bronchitis'},
@@ -136,6 +149,9 @@ class FarmIntelligence:
             {'week': 8, 'vaccine': 'Fowl Pox (Wing Web)', 'disease': 'Pox'},
             {'week': 10, 'vaccine': 'Infectious Coryza (Killed)', 'disease': 'Coryza'},
             {'week': 12, 'vaccine': 'Avian Encephalomyelitis (AE)', 'disease': 'AE'},
-            {'week': 16, 'vaccine': 'ND+IB+EDS (Multi-strain Killed)', 'disease': 'Multi-protection'}
+            {'week': 16, 'vaccine': 'ND+IB+EDS (Multi-strain Killed)', 'disease': 'Multi-protection'},
+            {'week': 24, 'vaccine': 'Deworming (Water Medication)', 'disease': 'Internal Parasites'},
+            {'week': 28, 'vaccine': 'ND + IB (Killed Booster)', 'disease': 'Newcastle & Bronchitis'},
+            {'week': 40, 'vaccine': 'ND + IB (Killed Booster)', 'disease': 'Newcastle & Bronchitis'}
         ]
         return [v for v in schedule if v['week'] >= age_weeks]
