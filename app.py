@@ -99,7 +99,7 @@ def get_biological_modifiers(breed, age, season):
     s_mod = {'spring': 1.0, 'summer': 0.95, 'autumn': 1.0, 'winter': 0.98}.get(season.lower(), 1.0)
     return b_mod, a_mod, s_mod
 
-def calculate_final_prediction(raw_efficiency, chickens, breed, age, season, temp=22, humidity=60, ammonia=10):
+def calculate_final_prediction(raw_efficiency, chickens, breed, age, season, temp=22, humidity=60, ammonia=10, light_lux=50, light_duration=16):
     # Determine the optimal biological baseline based on Breed and Age
     b_mod, a_mod, s_mod = get_biological_modifiers(breed, age, season)
     
@@ -110,10 +110,17 @@ def calculate_final_prediction(raw_efficiency, chickens, breed, age, season, tem
     # Calculate environmental penalty from the ML model
     env_penalty = max(0, 0.85 - raw_efficiency) * 0.4 
     
-    # Override: If environmental conditions are strictly optimal, bypass the ML penalty
-    # (Temp: 20-25C, Hum: 50-65%, Ammonia < 15ppm)
+    # Override: If environmental conditions are strictly optimal, bypass the harsh ML penalty
+    # but apply dynamic micro-adjustments so the output isn't completely static.
     if 20 <= temp <= 25 and 50 <= humidity <= 65 and ammonia <= 15:
-        env_penalty = 0.0 # Perfect environment, zero stress
+        light_penalty = 0.0
+        if light_lux < 30: light_penalty += 0.02
+        if light_duration < 14: light_penalty += 0.03
+        
+        # Ammonia naturally stresses birds even at safe levels. 15ppm = 2% drop, 0ppm = 0% drop.
+        ammonia_penalty = (ammonia / 15.0) * 0.02 
+        
+        env_penalty = light_penalty + ammonia_penalty
         
     # Final efficiency is the optimal biological capability minus the environmental stress penalty
     final_eff = optimal_eff - env_penalty
@@ -225,7 +232,8 @@ def predict():
         
         # 2. Logic
         prediction, _, b_mod, s_mod = calculate_final_prediction(
-            raw_eff, chickens, breed, age, season, temp, hum, float(data.get('Ammonia', 10))
+            raw_eff, chickens, breed, age, season, temp, hum, float(data.get('Ammonia', 10)),
+            float(data.get('Light_Intensity', 50)), float(data.get('Light_Duration', 16))
         )
         econ = calculate_economics(chickens, prediction, breed, age, data.get('System_Type', 'automatic'), 
                                    feed_g, float(data.get('Feed_Price_per_kg', 200)), float(data.get('Egg_Price_per_unit', 22)))
