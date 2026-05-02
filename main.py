@@ -178,6 +178,13 @@ class EggProductionPredictor:
         plt.savefig('static/plots/noise_simulation.png', transparent=True)
         plt.close()
 
+        # Print Final Evaluation Metrics
+        print("\n--- FINAL MODEL EVALUATION METRICS ---")
+        print(f"Mean Squared Error (MSE): {mean_squared_error(y_test, y_pred):.4f}")
+        print(f"Mean Absolute Error (MAE): {mean_absolute_error(y_test, y_pred):.4f}")
+        print(f"R-Squared (R2) Score:     {r2_score(y_test, y_pred):.4f}")
+        print("--------------------------------------\n")
+
         print("Professional Validation Suite Completed")
 
     def save_model(self):

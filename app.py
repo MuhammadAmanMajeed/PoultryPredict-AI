@@ -345,6 +345,17 @@ def get_alerts():
     db.close()
     return jsonify({'success': True, 'alerts': [dict(r) for r in rows]})
 
+@app.route('/api/farm_logs', methods=['GET'])
+def get_farm_logs():
+    if 'logged_in' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    db = get_db_connection()
+    # Fetch last 7 days of logs to populate the charts
+    rows = db.execute('SELECT * FROM daily_logs WHERE user_id = ? ORDER BY date DESC LIMIT 7', (session.get('user_id'),)).fetchall()
+    db.close()
+    # Reverse so the oldest is first in the chart left-to-right
+    logs = [dict(r) for r in reversed(rows)]
+    return jsonify({'success': True, 'logs': logs})
+
 @app.route('/api/market_trends', methods=['GET'])
 def get_market_trends():
     # Simulate historical data

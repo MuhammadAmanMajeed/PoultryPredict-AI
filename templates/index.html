@@ -495,10 +495,10 @@
         }
 
         async function renderMonitoringCharts() {
-            // Simulated monitoring data for demo
             const isDark = document.body.getAttribute('data-theme') === 'dark';
             const textColor = isDark ? '#fff' : '#000';
             
+            // Env Chart
             if(charts.env) charts.env.destroy();
             charts.env = new Chart(document.getElementById('envChart'), {
                 type: 'line',
@@ -512,17 +512,38 @@
                 options: { responsive: true, maintainAspectRatio: false, scales:{y:{ticks:{color:textColor}}, x:{ticks:{color:textColor}}} }
             });
 
+            // Default empty data
+            let labels = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7'];
+            let mortalityData = [0,0,0,0,0,0,0];
+            let fcrData = [0,0,0,0,0,0,0];
+
+            try {
+                // Fetch real data from DB
+                const res = await fetch('/api/farm_logs');
+                const data = await res.json();
+                if(data.success && data.logs.length > 0) {
+                    labels = data.logs.map(log => new Date(log.date).toLocaleDateString(undefined, {month:'short', day:'numeric'}));
+                    mortalityData = data.logs.map(log => log.mortality);
+                    
+                    // Calculate FCR: Feed(kg) / EggMass(kg)
+                    fcrData = data.logs.map(log => {
+                        const eggMassKg = log.eggs * 0.055; // 55g per egg avg
+                        return eggMassKg > 0 ? parseFloat((log.feed_kg / eggMassKg).toFixed(2)) : 0;
+                    });
+                }
+            } catch(e) { console.error("Error loading real chart data:", e); }
+
             if(charts.mortality) charts.mortality.destroy();
             charts.mortality = new Chart(document.getElementById('mortalityChart'), {
                 type: 'bar',
-                data: { labels: ['W1', 'W2', 'W3', 'W4'], datasets: [{ label: 'Mortality', data: [5, 3, 2, 8], backgroundColor: '#ef4444' }] },
+                data: { labels: labels, datasets: [{ label: 'Mortality (Birds)', data: mortalityData, backgroundColor: '#ef4444', borderRadius: 4 }] },
                 options: { responsive: true, maintainAspectRatio: false, scales:{y:{ticks:{color:textColor}}, x:{ticks:{color:textColor}}} }
             });
 
             if(charts.fcr) charts.fcr.destroy();
             charts.fcr = new Chart(document.getElementById('fcrChart'), {
                 type: 'line',
-                data: { labels: ['W1', 'W2', 'W3', 'W4'], datasets: [{ label: 'FCR Index', data: [1.8, 1.75, 1.72, 1.78], borderColor: '#10b981', tension: 0.4 }] },
+                data: { labels: labels, datasets: [{ label: 'FCR Index', data: fcrData, borderColor: '#10b981', tension: 0.4, borderWidth: 3 }] },
                 options: { responsive: true, maintainAspectRatio: false, scales:{y:{ticks:{color:textColor}}, x:{ticks:{color:textColor}}} }
             });
         }
