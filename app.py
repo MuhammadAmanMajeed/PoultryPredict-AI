@@ -238,12 +238,15 @@ def predict():
         econ = calculate_economics(chickens, prediction, breed, age, data.get('System_Type', 'automatic'), 
                                    feed_g, float(data.get('Feed_Price_per_kg', 200)), float(data.get('Egg_Price_per_unit', 22)))
 
-        # 3. Trends & History
+        # 3. AI Insights & Risk
         trend_data = []
         for a in [20, 30, 40, 50, 60, 70, 80]:
             _, a_mod, _ = get_biological_modifiers(breed, a, season)
             eff = min((0.7 + (raw_eff - 0.5) * 0.8) * b_mod * a_mod * s_mod, 0.91)
             trend_data.append({'age': a, 'eggs': round(eff * chickens, 0)})
+
+        risk_label, risk_score, risk_color = FarmIntelligence.calculate_risk_level(temp, hum, float(data.get('Ammonia', 10)))
+        ai_insights = FarmIntelligence.generate_ai_explanation(data, _, econ)
 
         # SAFE DATABASE SAVE (Optional on Vercel)
         try:
@@ -260,6 +263,8 @@ def predict():
             'predicted_per_chicken': round(prediction / chickens, 2) if chickens > 0 else 0,
             'economics': {k: round(v, 2) for k, v in econ.items()},
             'trend_data': trend_data, 
+            'risk': {'label': risk_label, 'score': risk_score, 'color': risk_color},
+            'ai_insights': ai_insights,
             'recommendations': generate_recommendations(data, prediction, econ['monthly_profit_pkr'])
         })
     except Exception as e:
@@ -345,22 +350,11 @@ def get_alerts():
     db.close()
     return jsonify({'success': True, 'alerts': [dict(r) for r in rows]})
 
-@app.route('/api/farm_logs', methods=['GET'])
-def get_farm_logs():
-    if 'logged_in' not in session: return jsonify({'error': 'Unauthorized'}), 401
-    db = get_db_connection()
-    # Fetch last 7 days of logs to populate the charts
-    rows = db.execute('SELECT * FROM daily_logs WHERE user_id = ? ORDER BY date DESC LIMIT 7', (session.get('user_id'),)).fetchall()
-    db.close()
-    # Reverse so the oldest is first in the chart left-to-right
-    logs = [dict(r) for r in reversed(rows)]
-    return jsonify({'success': True, 'logs': logs})
-
 @app.route('/api/market_trends', methods=['GET'])
 def get_market_trends():
     # Simulate historical data
     historical_prices = [22, 23, 22.5, 24, 25, 24.5, 26, 25.5, 27, 28]
-    forecast = FarmIntelligence.forecast_market_prices(historical_prices)
+    forecast = FarmIntelligence.forecast_markehnt_prices(historical_prices)
     return jsonify({
         'success': True,
         'history': historical_prices,

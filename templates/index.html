@@ -1,170 +1,506 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PoultryPredict AI | Intelligence Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --bg-dark: #0f172a; --bg-card: #1e293b; --primary: #fbbf24;
-            --primary-glow: rgba(251, 191, 36, 0.4); --success: #10b981;
-            --danger: #ef4444; --text-main: #f8fafc; --text-muted: #94a3b8;
-            --sidebar-w: 260px; --radius: 20px; --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            --sidebar-bg: #020617; --input-bg: #0f172a;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --primary: #fbbf24;
+            --primary-glow: rgba(251, 191, 36, 0.4);
+            --success: #10b981;
+            --danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --sidebar-w: 260px;
+            --radius: 20px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --sidebar-bg: #020617;
+            --input-bg: #0f172a;
         }
 
         [data-theme="light"] {
-            --bg-dark: #f1f5f9; --bg-card: #ffffff; --sidebar-bg: #e2e8f0;
-            --text-main: #0f172a; --text-muted: #64748b; --input-bg: #f8fafc;
-            --primary: #d97706; --primary-glow: rgba(217, 119, 6, 0.2);
+            --bg-dark: #f1f5f9;
+            --bg-card: #ffffff;
+            --sidebar-bg: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --input-bg: #f8fafc;
+            --primary: #d97706;
+            --primary-glow: rgba(217, 119, 6, 0.2);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
-            background: var(--bg-dark); color: var(--text-main); font-family: 'Inter', sans-serif;
-            min-height: 100vh; display: flex; overflow-x: hidden;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
             transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        .app-container {
+            display: flex;
+            width: 100%;
+            min-height: 100vh;
         }
 
         h1, h2, h3, h4 { font-family: 'Poppins', sans-serif; }
 
+        #loader {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--bg-dark);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
         .mobile-header {
-            display: none; position: fixed; top: 0; left: 0; right: 0; 
-            height: 60px; background: var(--sidebar-bg); z-index: 1001; 
-            align-items: center; justify-content: space-between; padding: 0 1.5rem;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: var(--sidebar-bg);
+            z-index: 1001;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         .sidebar {
-            width: var(--sidebar-w); background: var(--sidebar-bg); border-right: 1px solid rgba(0,0,0,0.05);
-            padding: 2rem 1.2rem; display: flex; flex-direction: column; position: fixed; height: 100vh; z-index: 1000;
+            width: var(--sidebar-w);
+            background: var(--sidebar-bg);
+            border-right: 1px solid rgba(0, 0, 0, 0.05);
+            padding: 2rem 1.2rem;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            flex-shrink: 0;
             transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             overflow-y: auto;
+            position: relative;
+            z-index: 1000;
         }
 
         /* Custom scrollbar for sidebar */
-        .sidebar::-webkit-scrollbar { width: 6px; }
-        .sidebar::-webkit-scrollbar-track { background: transparent; }
-        .sidebar::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.3); border-radius: 10px; }
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
 
-        .brand { font-size: 1.5rem; font-weight: 800; color: var(--primary); margin-bottom: 2.5rem; display: flex; align-items: center; gap: 12px; }
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(128, 128, 128, 0.3);
+            border-radius: 10px;
+        }
+
+        .brand {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 2.5rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
         .nav-item {
-            padding: 0.8rem 1.2rem; color: var(--text-muted); text-decoration: none;
-            border-radius: 12px; margin-bottom: 0.5rem; cursor: pointer;
-            transition: var(--transition); display: flex; align-items: center; gap: 12px; font-weight: 600;
+            padding: 0.8rem 1.2rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            border-radius: 12px;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
         }
-        .nav-item:hover, .nav-item.active { background: var(--bg-card); color: var(--primary); }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: var(--bg-card);
+            color: var(--primary);
+        }
+
         .status-pill {
-            margin-top: auto; padding: 1rem; background: rgba(16, 185, 129, 0.1);
-            border-radius: 12px; display: flex; align-items: center; gap: 8px;
-            font-size: 0.85rem; color: var(--success); font-weight: 700;
+            margin-top: auto;
+            padding: 1rem;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--success);
+            font-weight: 700;
         }
-        .status-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 10px var(--success); }
 
-        .main-stage { margin-left: var(--sidebar-w); flex: 1; padding: 2rem; width: 100%; transition: margin 0.3s; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1rem; }
-        .header-welcome h1 { font-size: 1.8rem; font-weight: 700; }
-        .header-welcome p { color: var(--text-muted); margin-top: 4px; font-size: 0.9rem; }
-        .header-actions { display: flex; align-items: center; gap: 20px; }
-        .action-icon { font-size: 1.2rem; color: var(--text-muted); cursor: pointer; transition: var(--transition); }
-        .action-icon:hover { color: var(--primary); }
-        .profile-img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--primary); }
-
-        .dashboard-grid { display: grid; grid-template-columns: 360px 1fr; gap: 2rem; }
-        .card {
-            background: var(--bg-card); border-radius: var(--radius); padding: 1.8rem;
-            box-shadow: 0 15px 30px -10px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.03);
-            margin-bottom: 1.5rem; transition: var(--transition);
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--success);
         }
-        [data-theme="dark"] .card { box-shadow: 0 15px 30px -10px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); }
-        .card:hover { transform: translateY(-5px); }
-        .card-title { font-size: 0.85rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1.5rem; }
 
-        .form-group { margin-bottom: 1rem; }
-        .form-group label { display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.4rem; }
-        .form-input {
-            width: 100%; background: var(--input-bg); border: 1px solid rgba(0,0,0,0.1);
-            color: var(--text-main); padding: 0.7rem 1rem; border-radius: 12px; font-size: 0.9rem;
+        .main-stage {
+            flex: 1;
+            padding: 2rem;
+            min-width: 0;
+            height: 100vh;
+            overflow-y: auto;
+            transition: margin 0.3s;
+        }
+        
+        @media (max-width: 1100px) {
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                transform: translateX(-100%);
+            }
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            .main-stage {
+                width: 100%;
+                padding: 1.5rem;
+                padding-top: 80px;
+            }
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header-welcome h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .header-welcome p {
+            color: var(--text-main);
+            opacity: 0.8;
+            margin-top: 4px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .action-icon {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            cursor: pointer;
             transition: var(--transition);
         }
-        [data-theme="dark"] .form-input { border: 1px solid rgba(255,255,255,0.1); }
-        .form-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px var(--primary-glow); }
 
-        .btn-predict {
-            background: var(--primary); color: #fff; font-weight: 800; padding: 1rem;
-            border: none; border-radius: 15px; cursor: pointer; width: 100%;
-            font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;
-            box-shadow: 0 8px 20px -5px var(--primary-glow); transition: var(--transition);
+        .action-icon:hover {
+            color: var(--primary);
         }
-        [data-theme="dark"] .btn-predict { color: #000; }
 
-        .result-main { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #000; padding: 1.5rem; border-radius: 20px; text-align: center; margin-bottom: 1.5rem; }
-        .result-main .val { font-size: 3.5rem; font-weight: 800; }
-        .result-main .lbl { font-size: 0.9rem; font-weight: 700; text-transform: uppercase; opacity: 0.8; }
-        
-        .mini-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
-        .mini-card { background: rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.05); padding: 1rem; border-radius: 18px; text-align: center; }
-        [data-theme="dark"] .mini-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); }
-        .mini-card .val { font-size: 1.2rem; font-weight: 700; color: var(--text-main); }
-        .mini-card .lbl { font-size: 0.6rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-top: 4px; }
+        .profile-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid var(--primary);
+        }
 
-        .profit-card { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); padding: 1.2rem; border-radius: 18px; text-align: center; }
-        .profit-card .val { font-size: 2rem; font-weight: 800; color: var(--success); }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 320px 1fr 300px;
+            gap: 1.5rem;
+            align-items: start;
+        }
 
-        .chart-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem; }
-        .validation-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-        .validation-card img { width: 100%; border-radius: 12px; border: 1px solid rgba(0,0,0,0.05); }
+        @media (max-width: 1500px) {
+            .dashboard-grid {
+                grid-template-columns: 300px 1fr;
+            }
+            #financial-panel {
+                grid-column: span 2;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 1.5rem;
+            }
+        }
 
         @media (max-width: 1100px) {
-            .dashboard-grid, .chart-grid, .validation-grid { grid-template-columns: 1fr; }
-            .sidebar { transform: translateX(-100%); }
-            .sidebar.active { transform: translateX(0); }
-            .main-stage { margin-left: 0; padding-top: 80px; }
-            .mobile-header { display: flex; }
+            .main-stage { margin-left: 0; width: 100%; }
+            .dashboard-grid { grid-template-columns: 1fr; }
+            #financial-panel { grid-column: span 1; grid-template-columns: 1fr; }
         }
 
-        @media (max-width: 480px) {
-            .main-stage { padding: 1rem; padding-top: 75px; }
-            .mini-grid { grid-template-columns: 1fr; }
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 1.8rem;
+            box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            margin-bottom: 1.5rem;
+            transition: var(--transition);
         }
 
-        .sidebar-overlay {
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); 
-            z-index: 999; backdrop-filter: blur(4px);
+        [data-theme="dark"] .card {
+            box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
-        .sidebar-overlay.active { display: block; }
 
-        #loader {
-            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); z-index: 2000;
-            display: none; flex-direction: column; align-items: center; justify-content: center;
+        .card:hover { transform: translateY(-5px); }
+
+        .card-title {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group { margin-bottom: 1rem; }
+        .form-group label {
+            display: block;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--text-main);
+            opacity: 0.9;
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.2px;
+        }
+
+        .form-input {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            color: var(--text-main);
+            padding: 0.7rem 1rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+
+        [data-theme="dark"] .form-input { border: 1px solid rgba(255, 255, 255, 0.1); }
+        .form-input:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        .input-warning, [data-theme="dark"] .input-warning { border-color: var(--primary) !important; box-shadow: 0 0 0 2px var(--primary-glow) !important; }
+        .input-danger, [data-theme="dark"] .input-danger { border-color: var(--danger) !important; box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important; }
+
+        .input-msg {
+            font-size: 0.65rem;
+            font-weight: 700;
+            margin-top: 4px;
+            display: none;
+        }
+        .msg-warning { color: var(--primary); display: block; }
+        .msg-danger { color: var(--danger); display: block; }
+
+        .btn-predict {
+            background: var(--primary);
+            color: #fff;
+            font-weight: 800;
+            padding: 1rem;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 8px 20px -5px var(--primary-glow);
+            transition: var(--transition);
+        }
+
+        [data-theme="dark"] .btn-predict { color: #000; }
+
+        .highlight-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .big-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: var(--transition);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .big-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 4px;
+            background: var(--primary);
+        }
+
+        .big-card.profit::before { background: var(--success); }
+        .big-card.risk::before { background: var(--danger); }
+
+        .big-card .val {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin: 0.5rem 0;
+            font-family: 'Poppins', sans-serif;
+            letter-spacing: -0.5px;
+        }
+
+        .big-card .lbl {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .ai-insight-box {
+            background: rgba(251, 191, 36, 0.05);
+            border-left: 4px solid var(--primary);
+            padding: 1.2rem;
+            border-radius: 12px;
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .insight-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .insight-item i {
+            color: var(--primary);
+            margin-top: 4px;
+        }
+
+        .badge-select {
+            display: flex;
+            gap: 8px;
+            margin-top: 5px;
+        }
+
+        .badge-opt {
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: var(--input-bg);
+            border: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .badge-opt.active {
+            background: var(--primary);
+            color: #000;
+            border-color: var(--primary);
+        }
+
+        .param-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 5px;
+        }
+
+        .indicator-green { background: var(--success); box-shadow: 0 0 8px var(--success); }
+        .indicator-yellow { background: var(--primary); box-shadow: 0 0 8px var(--primary); }
+        .indicator-red { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+        @keyframes ai-pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+
+        .ai-analyzing {
+            animation: ai-pulse 2s infinite;
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        #results-container {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
     </style>
 </head>
+
 <body data-theme="dark">
 
     <div id="loader">
-        <i class="fas fa-feather-pointed" style="font-size: 3rem; color: var(--primary); animation: pulse 1.5s infinite;"></i>
+        <i class="fas fa-feather-pointed"
+            style="font-size: 3rem; color: var(--primary); animation: pulse 1.5s infinite;"></i>
         <h2 style="margin-top: 1.5rem; font-weight: 800; font-size: 1.2rem;">Analyzing Poultry Intelligence...</h2>
     </div>
 
     <div class="mobile-header">
         <div style="color: var(--primary); font-weight: 800; font-size: 1.2rem;">🐔 PoultryPredict</div>
         <div style="display:flex; gap:15px; align-items:center;">
-             <i class="fas fa-sun" style="font-size: 1.2rem; cursor: pointer; color: var(--text-muted);" onclick="toggleTheme()" id="theme-toggle-mobile"></i>
-             <i class="fas fa-bars" style="font-size: 1.5rem; cursor: pointer;" onclick="toggleSidebar()"></i>
+            <i class="fas fa-sun" style="font-size: 1.2rem; cursor: pointer; color: var(--text-muted);"
+                onclick="toggleTheme()" id="theme-toggle-mobile"></i>
+            <i class="fas fa-bars" style="font-size: 1.5rem; cursor: pointer;" onclick="toggleSidebar()"></i>
         </div>
     </div>
 
-    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+    <div class="app-container">
+        <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
-    <div class="sidebar" id="sidebar">
+        <div class="sidebar" id="sidebar">
         <div class="brand">🐔 PoultryPredict AI</div>
         <div class="nav-item active" onclick="switchTab('dashboard')"><i class="fas fa-grid-2"></i> Dashboard</div>
-        <div class="nav-item" onclick="switchTab('monitoring')"><i class="fas fa-temperature-half"></i> Farm Monitoring</div>
+        <div class="nav-item" onclick="switchTab('monitoring')"><i class="fas fa-temperature-half"></i> Farm Monitoring
+        </div>
         <div class="nav-item" onclick="switchTab('prediction')"><i class="fas fa-brain"></i> Prediction Center</div>
         <div class="nav-item" onclick="switchTab('market')"><i class="fas fa-chart-line-up"></i> Market Trends</div>
         <div class="nav-item" onclick="switchTab('health')"><i class="fas fa-heartbeat"></i> Health & Meds</div>
@@ -172,9 +508,13 @@
         <div class="nav-item" onclick="exportPDF()"><i class="fas fa-file-pdf"></i> PDF Report</div>
         <a href="/api/export/csv" class="nav-item"><i class="fas fa-file-csv"></i> CSV Export</a>
         <div class="nav-item" onclick="switchTab('settings')"><i class="fas fa-cog"></i> Settings</div>
-        <a href="/logout" class="nav-item" style="color: var(--danger); margin-top: 2rem;"><i class="fas fa-right-from-bracket"></i> Logout</a>
-        <div class="status-pill"><div class="status-dot"></div> Status: Operational</div>
-        <div style="margin-top: 1.5rem; text-align: center; font-size: 0.7rem; color: var(--text-muted); line-height: 1.4;">
+        <a href="/logout" class="nav-item" style="color: var(--danger); margin-top: 2rem;"><i
+                class="fas fa-right-from-bracket"></i> Logout</a>
+        <div class="status-pill">
+            <div class="status-dot"></div> Status: Operational
+        </div>
+        <div
+            style="margin-top: 1.5rem; text-align: center; font-size: 0.7rem; color: var(--text-muted); line-height: 1.4;">
             Developed by<br>
             <strong style="color: var(--primary); font-size: 0.75rem;">Muhammad Aman Majeed</strong>
         </div>
@@ -190,91 +530,175 @@
                 <i class="fas fa-sun action-icon" id="theme-toggle" onclick="toggleTheme()"></i>
                 <div style="position: relative;">
                     <i class="fas fa-bell action-icon" onclick="toggleAlerts()"></i>
-                    <span id="alert-badge" style="display:none; position:absolute; top:-5px; right:-5px; background:var(--danger); color:white; border-radius:50%; width:18px; height:18px; font-size:10px; display:flex; align-items:center; justify-content:center;">0</span>
-                    <div id="alerts-dropdown" style="display:none; position:absolute; top:40px; right:-60px; background:var(--bg-card); width:280px; max-width:90vw; border-radius:15px; box-shadow:0 10px 30px rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.1); z-index:1002; padding:1rem;">
-                        <div style="font-weight:800; font-size:0.8rem; margin-bottom:1rem; color:var(--primary);">ACTIVE ALERTS</div>
+                    <span id="alert-badge"
+                        style="display:none; position:absolute; top:-5px; right:-5px; background:var(--danger); color:white; border-radius:50%; width:18px; height:18px; font-size:10px; display:flex; align-items:center; justify-content:center;">0</span>
+                    <div id="alerts-dropdown"
+                        style="display:none; position:absolute; top:40px; right:-60px; background:var(--bg-card); width:280px; max-width:90vw; border-radius:15px; box-shadow:0 10px 30px rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.1); z-index:1002; padding:1rem;">
+                        <div style="font-weight:800; font-size:0.8rem; margin-bottom:1rem; color:var(--primary);">ACTIVE
+                            ALERTS</div>
                         <div id="alerts-list" style="max-height:300px; overflow-y:auto;"></div>
                     </div>
                 </div>
-                <img src="https://ui-avatars.com/api/?name={{ username }}&background=fbbf24&color=000" class="profile-img">
+                <img src="https://ui-avatars.com/api/?name={{ username }}&background=fbbf24&color=000"
+                    class="profile-img">
             </div>
         </div>
 
         <div id="dashboard-view" class="tab-view">
+            <!-- 3 Section Layout Start -->
             <div class="dashboard-grid">
+                
+                <!-- SECTION 1: 📊 Farm Inputs (Left) -->
                 <div class="card" id="prediction-panel">
-                    <div class="card-title">Operational Parameters</div>
-                    <!-- DEFAULT VALUES UPDATED -->
-                    <div class="form-group"><label>Number of Chickens</label><input type="number" id="Amount_of_chicken" class="form-input" value="5000"></div>
-                    <div class="form-group"><label>Feed per Bird (g)</label><input type="number" id="Feed_per_Chicken_g" class="form-input" value="110"></div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
-                        <div class="form-group"><label>Temp °C</label><input type="number" id="Temperature" class="form-input" value="23"></div>
-                        <div class="form-group"><label>Hum %</label><input type="number" id="Humidity" class="form-input" value="60"></div>
+                    <div class="card-title">📊 Farm Inputs</div>
+                    <div class="form-group">
+                        <label>Flock Size <span id="ind-flock" class="param-indicator"></span></label>
+                        <input type="number" id="Amount_of_chicken" class="form-input" value="5000">
+                    </div>
+                    <div class="form-group">
+                        <label>Feed per Bird (g) <span id="ind-feed" class="param-indicator"></span></label>
+                        <input type="number" id="Feed_per_Chicken_g" class="form-input" value="110">
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
-                        <div class="form-group"><label>Ammonia (ppm)</label><input type="number" id="Ammonia" class="form-input" value="15"></div>
-                        <div class="form-group"><label>Noise (dB)</label><input type="number" id="Noise" class="form-input" value="45"></div>
+                        <div class="form-group"><label>Temp °C <span id="ind-temp" class="param-indicator"></span></label>
+                            <input type="number" id="Temperature" class="form-input" value="23" oninput="updateIndicators()">
+                            <div id="msg-Temperature" class="input-msg"></div>
+                        </div>
+                        <div class="form-group"><label>Hum % <span id="ind-hum" class="param-indicator"></span></label>
+                            <input type="number" id="Humidity" class="form-input" value="60" oninput="updateIndicators()">
+                            <div id="msg-Humidity" class="input-msg"></div>
+                        </div>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
-                        <div class="form-group"><label>Light (Lux)</label><input type="number" id="Light_Intensity" class="form-input" value="50"></div>
-                        <div class="form-group"><label>Light Duration (Hrs)</label><input type="number" id="Light_Duration" class="form-input" value="16"></div>
+                    <div class="form-group">
+                        <label>Ammonia (ppm) <span id="ind-amm" class="param-indicator"></span></label>
+                        <input type="number" id="Ammonia" class="form-input" value="15" oninput="updateIndicators()">
+                        <div id="msg-Ammonia" class="input-msg"></div>
                     </div>
-                    <div class="form-group"><label>Bird Type</label><select id="Breed" class="form-input"><option value="commercial">Commercial</option><option value="desi">Desi</option><option value="misri">Misri</option></select></div>
+                    <div class="form-group">
+                        <label>Bird Type</label>
+                        <div class="badge-select" id="breed-select">
+                            <div class="badge-opt active" data-val="commercial">Commercial</div>
+                            <div class="badge-opt" data-val="misri">Misri</div>
+                            <div class="badge-opt" data-val="desi">Desi</div>
+                        </div>
+                        <input type="hidden" id="Breed" value="commercial">
+                    </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
                         <div class="form-group"><label>Age (W)</label><input type="number" id="Age" class="form-input" value="28"></div>
-                        <div class="form-group"><label>System Type</label><select id="System_Type" class="form-input"><option value="automatic">Automatic</option><option value="manual">Manual</option></select></div>
+                        <div class="form-group">
+                            <label>System</label>
+                            <select id="System_Type" class="form-input">
+                                <option value="automatic">Automatic</option>
+                                <option value="manual">Manual</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="form-group"><label>Season</label><select id="Season" class="form-input"><option value="spring">Spring</option><option value="summer">Summer</option><option value="winter">Winter</option></select></div>
-                    <!-- DEFAULT VALUES UPDATED -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;"><div class="form-group"><label>Feed PKR/kg</label><input type="number" id="Feed_Price" class="form-input" value="215"></div><div class="form-group"><label>Egg PKR/ea</label><input type="number" id="Egg_Price" class="form-input" value="24"></div></div>
-                    <button class="btn-predict" onclick="runPrediction()">🟡 RUN AI ANALYSIS</button>
+                    <div class="form-group">
+                        <label>Season</label>
+                        <select id="Season" class="form-input">
+                            <option value="spring">Spring</option>
+                            <option value="summer">Summer</option>
+                            <option value="winter">Winter</option>
+                            <option value="autumn">Autumn</option>
+                        </select>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+                        <div class="form-group"><label>Feed PKR/kg</label><input type="number" id="Feed_Price" class="form-input" value="215"></div>
+                        <div class="form-group"><label>Egg PKR/ea</label><input type="number" id="Egg_Price" class="form-input" value="24"></div>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 1rem;">
+                        <button class="btn-predict" id="main-run-btn" onclick="runPrediction()">🟡 RUN AI ANALYSIS</button>
+                        <p id="ai-status" class="ai-analyzing" style="display:none; font-size: 0.7rem; margin-top: 10px;">AI is analyzing farm conditions...</p>
+                    </div>
                 </div>
 
-                <div class="card" id="logging-panel">
-                    <div class="card-title">Daily Farm Logging</div>
-                    <div class="form-group"><label>Eggs Collected</label><input type="number" id="log-eggs" class="form-input" placeholder="Total eggs today"></div>
-                    <div class="form-group"><label>Feed Consumed (kg)</label><input type="number" id="log-feed" class="form-input" placeholder="Total feed today"></div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
-                        <div class="form-group"><label>Mortality</label><input type="number" id="log-mortality" class="form-input" value="0"></div>
-                        <div class="form-group"><label>Active Birds</label><input type="number" id="log-birds" class="form-input" value="5000"></div>
+                <!-- SECTION 2: 📈 AI Results (Center) -->
+                <div id="results-panel">
+                    <div class="highlight-cards">
+                        <div class="big-card">
+                            <div class="lbl">🥚 Daily Eggs</div>
+                            <div class="val" id="res-eggs">0</div>
+                            <div style="font-size: 0.7rem; font-weight: 700; color: var(--success);" id="res-efficiency">0% Efficiency</div>
+                        </div>
+                        <div class="big-card profit">
+                            <div class="lbl">💰 Monthly Profit</div>
+                            <div class="val" id="res-profit" style="color: var(--success);">0</div>
+                            <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);">PKR / Month</div>
+                        </div>
+                        <div class="big-card risk">
+                            <div class="lbl">⚠️ Risk Level</div>
+                            <div class="val" id="res-risk" style="color: var(--success);">Low</div>
+                            <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);" id="res-risk-score">Safety: 100%</div>
+                        </div>
                     </div>
-                    <button class="btn-predict" style="background:var(--success); box-shadow:0 8px 20px -5px rgba(16, 185, 129, 0.4);" onclick="submitDailyLog()">🟢 SAVE DAILY LOG</button>
+
+                    <div id="results-container" style="opacity: 0.1;">
+                        <div class="card">
+                            <div class="card-title">🤖 AI INSIGHTS & EXPLANATION</div>
+                            <div id="insights-container" class="ai-insight-box">
+                                <div class="insight-item">
+                                    <i class="fas fa-circle-info"></i>
+                                    <span>Run analysis to see AI driven farm insights.</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-title">📉 Production & Efficiency Trends</div>
+                            <div style="height: 350px;"><canvas id="trendChart"></canvas></div>
+                        </div>
+                    </div>
                 </div>
-                <div id="results-container" style="opacity: 0.1; transition: 0.5s;">
-                    <div class="result-main">
-                        <div class="val" id="res-eggs">0</div>
-                        <div class="lbl">Daily Eggs Projected</div>
-                        <div id="performance-badge" style="font-size: 0.7rem; font-weight: 800; padding: 4px 10px; border-radius: 20px; background: rgba(0,0,0,0.2); display: inline-block; margin-top: 10px;">OPTIMIZING...</div>
+
+                <!-- SECTION 3: 📉 Financials + Charts (Right) -->
+                <div id="financial-panel">
+                    <div class="card">
+                        <div class="card-title">💸 Cost Breakdown</div>
+                        <div style="height: 220px; margin-bottom: 1rem;"><canvas id="costChart"></canvas></div>
+                        <div class="mini-grid">
+                            <div class="mini-card"><div class="val" id="res-startup" style="font-size: 1rem;">0</div><div class="lbl">Startup</div></div>
+                            <div class="mini-card"><div class="val" id="res-feed" style="font-size: 1rem;">0</div><div class="lbl">Feed/Mo</div></div>
+                        </div>
                     </div>
-                    <div class="mini-grid">
-                        <div class="mini-card"><div class="val" id="res-startup">0</div><div class="lbl">Startup (PKR)</div></div>
-                        <div class="mini-card"><div class="val" id="res-feed">0</div><div class="lbl">Feed/Month (PKR)</div></div>
-                        <div class="mini-card"><div class="val" id="res-bird">0</div><div class="lbl">Birds (PKR)</div></div>
-                        <div class="mini-card"><div class="val" id="res-infra">0</div><div class="lbl">Infra (PKR)</div></div>
+                    <div class="card">
+                        <div class="card-title">⚖️ Feed vs Output</div>
+                        <div style="height: 220px;"><canvas id="feedOutputChart"></canvas></div>
                     </div>
-                    <div class="profit-card"><div class="lbl" style="font-size:0.7rem; font-weight:800; color:var(--text-muted); text-transform:uppercase;">Estimated Monthly Profit</div><div class="val" id="res-profit">0 PKR</div></div>
-                    <div id="insights-container" style="margin-top:1.5rem;"></div>
+                    
+                    <div class="card" id="logging-panel">
+                        <div class="card-title">📝 Quick Log</div>
+                        <div class="form-group"><input type="number" id="log-eggs" class="form-input" placeholder="Eggs today"></div>
+                        <div class="form-group"><input type="number" id="log-feed" class="form-input" placeholder="Feed (kg)"></div>
+                        <button class="btn-predict" style="background:var(--success); font-size: 0.75rem; padding: 0.6rem;" onclick="submitDailyLog()">SAVE LOG</button>
+                    </div>
                 </div>
             </div>
-            <div id="analytics-section">
-                <div class="chart-grid" id="charts-area" style="opacity: 0.1; transition: 0.5s;">
-                    <div class="card"><div class="card-title">Production Trend</div><div style="height: 300px;"><canvas id="trendChart"></canvas></div></div>
-                    <div class="card"><div class="card-title">Cost Breakdown</div><div style="height: 300px;"><canvas id="costChart"></canvas></div></div>
-                </div>
-                <div class="card" style="opacity: 0.1;" id="climate-card"><div class="card-title">Climate Sensitivity</div><div style="height: 250px;"><canvas id="climateChart"></canvas></div></div>
-            </div>
+            <!-- 3 Section Layout End -->
         </div>
 
         <div id="monitoring-view" class="tab-view" style="display: none;">
-            <div class="card"><div class="card-title">Environmental Trends (Last 7 Days)</div><div style="height: 400px;"><canvas id="envChart"></canvas></div></div>
+            <div class="card">
+                <div class="card-title">Environmental Trends (Last 7 Days)</div>
+                <div style="height: 400px;"><canvas id="envChart"></canvas></div>
+            </div>
             <div class="mini-grid">
-                <div class="card"><div class="card-title">Mortality Tracker</div><div style="height: 250px;"><canvas id="mortalityChart"></canvas></div></div>
-                <div class="card"><div class="card-title">FCR Analysis</div><div style="height: 250px;"><canvas id="fcrChart"></canvas></div></div>
+                <div class="card">
+                    <div class="card-title">Mortality Tracker</div>
+                    <div style="height: 250px;"><canvas id="mortalityChart"></canvas></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">FCR Analysis</div>
+                    <div style="height: 250px;"><canvas id="fcrChart"></canvas></div>
+                </div>
             </div>
         </div>
 
         <div id="market-view" class="tab-view" style="display: none;">
-            <div class="card"><div class="card-title">Egg Price Forecast (Prophet/AI Model)</div><div style="height: 400px;"><canvas id="marketChart"></canvas></div></div>
+            <div class="card">
+                <div class="card-title">Egg Price Forecast (Prophet/AI Model)</div>
+                <div style="height: 400px;"><canvas id="marketChart"></canvas></div>
+            </div>
             <div class="profit-card" style="background:rgba(59, 130, 246, 0.1); border-color:rgba(59, 130, 246, 0.2);">
                 <div class="lbl">Current Market Average</div>
                 <div class="val" id="market-current-val" style="color:#3b82f6;">0 PKR</div>
@@ -283,22 +707,35 @@
 
         <div id="validation-view" class="tab-view" style="display: none;">
             <div class="validation-grid">
-                <div class="card"><div class="card-title">Learning Curves</div><img src="/static/plots/learning_curves.png"></div>
-                <div class="card"><div class="card-title">Residual Plot</div><img src="/static/plots/residual_plot.png"></div>
-                <div class="card"><div class="card-title">Feature Importance</div><img src="/static/plots/feature_importance_model.png"></div>
-                <div class="card"><div class="card-title">Noise Robustness</div><img src="/static/plots/noise_simulation.png"></div>
+                <div class="card">
+                    <div class="card-title">Learning Curves</div><img src="/static/plots/learning_curves.png">
+                </div>
+                <div class="card">
+                    <div class="card-title">Residual Plot</div><img src="/static/plots/residual_plot.png">
+                </div>
+                <div class="card">
+                    <div class="card-title">Feature Importance</div><img
+                        src="/static/plots/feature_importance_model.png">
+                </div>
+                <div class="card">
+                    <div class="card-title">Noise Robustness</div><img src="/static/plots/noise_simulation.png">
+                </div>
             </div>
         </div>
         <div id="health-view" class="tab-view" style="display: none;">
             <div class="mini-grid">
                 <div class="card">
                     <div class="card-title">Symptom Checker (AI Diagnostic)</div>
-                    <div id="symptom-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem;">
-                        <label class="check-container"><input type="checkbox" value="green_diarrhea"> Green Diarrhea</label>
-                        <label class="check-container"><input type="checkbox" value="bloody_diarrhea"> Bloody Diarrhea</label>
+                    <div id="symptom-list"
+                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem;">
+                        <label class="check-container"><input type="checkbox" value="green_diarrhea"> Green
+                            Diarrhea</label>
+                        <label class="check-container"><input type="checkbox" value="bloody_diarrhea"> Bloody
+                            Diarrhea</label>
                         <label class="check-container"><input type="checkbox" value="coughing"> Coughing</label>
                         <label class="check-container"><input type="checkbox" value="sneezing"> Sneezing</label>
-                        <label class="check-container"><input type="checkbox" value="nervous_signs"> Nervous Signs</label>
+                        <label class="check-container"><input type="checkbox" value="nervous_signs"> Nervous
+                            Signs</label>
                         <label class="check-container"><input type="checkbox" value="swollen_face"> Swollen Face</label>
                         <label class="check-container"><input type="checkbox" value="wet_eyes"> Wet Eyes</label>
                         <label class="check-container"><input type="checkbox" value="weight_loss"> Weight Loss</label>
@@ -312,26 +749,53 @@
                 </div>
             </div>
         </div>
-        
-        <div id="history-view" class="tab-view" style="display: none;"><div class="card"><div class="card-title">History Logs</div><div style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse; margin-top: 1rem; min-width: 600px;"><thead style="text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); font-size: 0.75rem;"><tr><th style="padding: 1rem;">Time</th><th>Birds</th><th>Breed</th><th>Yield</th><th>Profit</th></tr></thead><tbody id="history-tbody"></tbody></table></div></div></div>
-        
+
+        <div id="history-view" class="tab-view" style="display: none;">
+            <div class="card">
+                <div class="card-title">History Logs</div>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 1rem; min-width: 600px;">
+                        <thead
+                            style="text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); font-size: 0.75rem;">
+                            <tr>
+                                <th style="padding: 1rem;">Time</th>
+                                <th>Birds</th>
+                                <th>Breed</th>
+                                <th>Yield</th>
+                                <th>Profit</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <div id="settings-view" class="tab-view" style="display: none;">
             <div class="card">
                 <div class="card-title">System Settings</div>
-                <div class="form-group"><label>Farm Name</label><input type="text" class="form-input" value="My Smart Poultry Farm"></div>
-                <div class="form-group"><label>Notification Email</label><input type="email" class="form-input" value="farmer@example.com"></div>
-                <div class="form-group"><label>Default Currency</label><select class="form-input"><option>PKR</option><option>USD</option></select></div>
+                <div class="form-group"><label>Farm Name</label><input type="text" class="form-input"
+                        value="My Smart Poultry Farm"></div>
+                <div class="form-group"><label>Notification Email</label><input type="email" class="form-input"
+                        value="farmer@example.com"></div>
+                <div class="form-group"><label>Default Currency</label><select class="form-input">
+                        <option>PKR</option>
+                        <option>USD</option>
+                    </select></div>
                 <button class="btn-predict" style="margin-top:1rem;">SAVE PREFERENCES</button>
             </div>
             <div class="card">
                 <div class="card-title">Account Management</div>
-                <button class="btn-predict" style="background:var(--danger); box-shadow:none;" onclick="resetData()">RESET ALL DATA</button>
+                <button class="btn-predict" style="background:var(--danger); box-shadow:none;"
+                    onclick="resetData()">RESET ALL DATA</button>
             </div>
+        </div>
         </div>
     </div>
 
     <script>
         let charts = {};
+        let lastData = null;
         document.getElementById('current-date').innerText = new Date().toLocaleDateString();
 
         function toggleTheme() {
@@ -345,7 +809,7 @@
                 body.setAttribute('data-theme', 'dark');
                 icon.className = iconMob.className = 'fas fa-sun action-icon';
             }
-            if(lastData) renderCharts(lastData);
+            if (lastData) renderCharts(lastData);
         }
 
         function toggleSidebar() {
@@ -356,82 +820,226 @@
         function switchTab(tab) {
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             const targetNav = Array.from(document.querySelectorAll('.nav-item')).find(n => n.innerText.toLowerCase().includes(tab));
-            if(targetNav) targetNav.classList.add('active');
+            if (targetNav) targetNav.classList.add('active');
             document.querySelectorAll('.tab-view').forEach(v => v.style.display = 'none');
-            if(window.innerWidth <= 1100) toggleSidebar();
-            
-            if(tab === 'dashboard') { document.getElementById('dashboard-view').style.display = 'block'; window.scrollTo({ top: 0, behavior: 'smooth' }); }
-            else if(tab === 'monitoring') { document.getElementById('monitoring-view').style.display = 'block'; renderMonitoringCharts(); }
-            else if(tab === 'market') { document.getElementById('market-view').style.display = 'block'; renderMarketTrends(); }
-            else if(tab === 'health') { document.getElementById('health-view').style.display = 'block'; updateVaccinations(); }
-            else if(tab === 'prediction') { document.getElementById('dashboard-view').style.display = 'block'; document.getElementById('prediction-panel').scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-            else if(tab === 'history') { document.getElementById('history-view').style.display = 'block'; loadHistory(); }
-            else if(tab === 'settings') { document.getElementById('settings-view').style.display = 'block'; }
-            else if(tab === 'validation') { document.getElementById('validation-view').style.display = 'block'; }
+            if (window.innerWidth <= 1100) toggleSidebar();
+
+            if (tab === 'dashboard') { document.getElementById('dashboard-view').style.display = 'block'; window.scrollTo({ top: 0, behavior: 'smooth' }); }
+            else if (tab === 'monitoring') { document.getElementById('monitoring-view').style.display = 'block'; renderMonitoringCharts(); }
+            else if (tab === 'market') { document.getElementById('market-view').style.display = 'block'; renderMarketTrends(); }
+            else if (tab === 'health') { document.getElementById('health-view').style.display = 'block'; updateVaccinations(); }
+            else if (tab === 'prediction') { document.getElementById('dashboard-view').style.display = 'block'; document.getElementById('prediction-panel').scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+            else if (tab === 'history') { document.getElementById('history-view').style.display = 'block'; loadHistory(); }
+            else if (tab === 'settings') { document.getElementById('settings-view').style.display = 'block'; }
+            else if (tab === 'validation') { document.getElementById('validation-view').style.display = 'block'; }
         }
 
-        let lastData = null;
-        async function runPrediction() {
-            document.getElementById('loader').style.display = 'flex';
-            const payload = {
-                Amount_of_chicken: document.getElementById('Amount_of_chicken').value, Feed_per_Chicken_g: document.getElementById('Feed_per_Chicken_g').value,
-                Temperature: document.getElementById('Temperature').value, Humidity: document.getElementById('Humidity').value,
-                Ammonia: document.getElementById('Ammonia').value, Noise: document.getElementById('Noise').value,
-                Light_Intensity: document.getElementById('Light_Intensity').value, Light_Duration: document.getElementById('Light_Duration').value,
-                Breed: document.getElementById('Breed').value, Age: document.getElementById('Age').value, Season: document.getElementById('Season').value,
-                System_Type: document.getElementById('System_Type').value, Feed_Price_per_kg: document.getElementById('Feed_Price').value, Egg_Price_per_unit: document.getElementById('Egg_Price').value
+        // Badge Selection Logic
+        document.querySelectorAll('.badge-opt').forEach(opt => {
+            opt.addEventListener('click', () => {
+                const parent = opt.parentElement;
+                parent.querySelectorAll('.badge-opt').forEach(o => o.classList.remove('active'));
+                opt.classList.add('active');
+                const targetInput = parent.id === 'breed-select' ? 'Breed' : null;
+                if (targetInput) document.getElementById(targetInput).value = opt.dataset.val;
+            });
+        });
+
+        function updateIndicators() {
+            const temp = parseFloat(document.getElementById('Temperature').value);
+            const hum = parseFloat(document.getElementById('Humidity').value);
+            const amm = parseFloat(document.getElementById('Ammonia').value);
+
+            const setInd = (id, inputId, val, range) => {
+                const el = document.getElementById(id);
+                const input = document.getElementById(inputId);
+                const msgEl = document.getElementById('msg-' + inputId);
+                if (!el) return;
+                
+                el.className = 'param-indicator';
+                if (input) input.classList.remove('input-warning', 'input-danger');
+                if (msgEl) { msgEl.className = 'input-msg'; msgEl.innerText = ''; }
+
+                if (val >= range.ok[0] && val <= range.ok[1]) {
+                    el.classList.add('indicator-green');
+                } else if (val >= range.warn[0] && val <= range.warn[1]) {
+                    el.classList.add('indicator-yellow');
+                    if (input) input.classList.add('input-warning');
+                    if (msgEl) {
+                        msgEl.classList.add('msg-warning');
+                        msgEl.innerText = `Warning: Suboptimal ${inputId}`;
+                    }
+                } else {
+                    el.classList.add('indicator-red');
+                    if (input) input.classList.add('input-danger');
+                    if (msgEl) {
+                        msgEl.classList.add('msg-danger');
+                        msgEl.innerText = `Critical: High ${inputId} Alert!`;
+                    }
+                }
             };
+
+            setInd('ind-temp', 'Temperature', temp, { ok: [20, 25], warn: [18, 27] });
+            setInd('ind-hum', 'Humidity', hum, { ok: [50, 65], warn: [40, 75] });
+            setInd('ind-amm', 'Ammonia', amm, { ok: [0, 10], warn: [11, 20] });
+        }
+        updateIndicators();
+
+        async function runPrediction() {
+            const btn = document.getElementById('main-run-btn');
+            const status = document.getElementById('ai-status');
+            btn.style.opacity = '0.5';
+            btn.disabled = true;
+            status.style.display = 'block';
+
+            const payload = {
+                Amount_of_chicken: document.getElementById('Amount_of_chicken').value,
+                Feed_per_Chicken_g: document.getElementById('Feed_per_Chicken_g').value,
+                Temperature: document.getElementById('Temperature').value,
+                Humidity: document.getElementById('Humidity').value,
+                Ammonia: document.getElementById('Ammonia').value,
+                Breed: document.getElementById('Breed').value,
+                Age: document.getElementById('Age').value,
+                System_Type: document.getElementById('System_Type').value,
+                Season: document.getElementById('Season').value,
+                Feed_Price_per_kg: document.getElementById('Feed_Price').value,
+                Egg_Price_per_unit: document.getElementById('Egg_Price').value,
+                Noise: 45,
+                Light_Intensity: 50,
+                Light_Duration: 16
+            };
+
             try {
-                const res = await fetch('/api/predict', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
-                const data = await res.json(); lastData = data;
-                setTimeout(() => { document.getElementById('loader').style.display = 'none'; revealResults(data); }, 1500);
-            } catch(e) { document.getElementById('loader').style.display = 'none'; alert("Error: " + e.message); }
+                const res = await fetch('/api/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    lastData = data;
+                    updateResultsUI(data);
+                    renderCharts(data);
+                }
+            } catch (e) { 
+                console.error(e); 
+                alert("AI Analysis failed. Check server connection.");
+            }
+            finally {
+                btn.style.opacity = '1';
+                btn.disabled = false;
+                status.style.display = 'none';
+            }
         }
 
-        function revealResults(data) {
-            document.getElementById('results-container').style.opacity = '1';
-            document.getElementById('charts-area').style.opacity = '1'; document.getElementById('climate-card').style.opacity = '1';
-            animateValue('res-eggs', 0, data.predicted_eggs, 1000);
-            animateValue('res-startup', 0, data.economics.startup_cost_pkr, 1000);
-            animateValue('res-feed', 0, data.economics.monthly_feed_cost_pkr, 1000);
-            animateValue('res-bird', 0, data.economics.bird_cost_total_pkr, 1000);
-            animateValue('res-infra', 0, data.economics.infrastructure_cost_total_pkr, 1000);
-            document.getElementById('res-profit').innerText = data.economics.monthly_profit_pkr.toLocaleString() + ' PKR';
+        function updateResultsUI(data) {
+            const container = document.getElementById('results-container');
+            container.style.opacity = '1';
             
-            // Performance Benchmark Logic
-            const badge = document.getElementById('performance-badge');
-            const eff = data.predicted_eggs / document.getElementById('Amount_of_chicken').value;
-            if(eff >= 0.8) { badge.innerText = 'EXCELLENT PRODUCTION'; badge.style.color = '#10b981'; }
-            else if(eff >= 0.7) { badge.innerText = 'GOOD PRODUCTION'; badge.style.color = '#fbbf24'; }
-            else if(eff >= 0.5) { badge.innerText = 'AVERAGE PRODUCTION'; badge.style.color = '#f59e0b'; }
-            else { badge.innerText = 'LOW PRODUCTION / HIGH RISK'; badge.style.color = '#ef4444'; }
+            // Big Cards
+            document.getElementById('res-eggs').innerText = data.predicted_eggs.toLocaleString();
+            document.getElementById('res-efficiency').innerText = `${Math.round(data.predicted_per_chicken * 100)}% Production Efficiency`;
             
-            renderCharts(data);
-        }
+            const profitVal = Math.round(data.economics.monthly_profit_pkr);
+            const profitEl = document.getElementById('res-profit');
+            profitEl.innerText = `${profitVal.toLocaleString()} PKR`;
+            profitEl.style.color = profitVal > 0 ? 'var(--success)' : 'var(--danger)';
+            
+            const riskEl = document.getElementById('res-risk');
+            riskEl.innerText = data.risk.label;
+            riskEl.style.color = data.risk.color;
+            document.getElementById('res-risk-score').innerText = `Safety Score: ${100 - data.risk.score}%`;
 
-        function animateValue(id, start, end, duration) {
-            const obj = document.getElementById(id); let startT = null;
-            const step = (t) => { if(!startT) startT = t; const progress = Math.min((t - startT)/duration, 1); obj.innerText = Math.floor(progress * (end - start) + start).toLocaleString(); if(progress < 1) window.requestAnimationFrame(step); };
-            window.requestAnimationFrame(step);
+            // Insights
+            const insightsList = document.getElementById('insights-container');
+            insightsList.innerHTML = data.ai_insights.map(msg => `
+                <div class="insight-item">
+                    <i class="fas fa-circle-check"></i>
+                    <span>${msg}</span>
+                </div>
+            `).join('') || '<div class="insight-item"><span>No critical insights detected.</span></div>';
+
+            // Right Panel Minis
+            document.getElementById('res-startup').innerText = Math.round(data.economics.startup_cost_pkr / 1000).toLocaleString() + 'k';
+            document.getElementById('res-feed').innerText = Math.round(data.economics.monthly_feed_cost_pkr / 1000).toLocaleString() + 'k';
         }
 
         function renderCharts(data) {
             const isDark = document.body.getAttribute('data-theme') === 'dark';
-            const textColor = isDark ? '#fff' : '#000';
-            if(charts.trend) charts.trend.destroy();
+            const color = isDark ? '#94a3b8' : '#64748b';
+            const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+
+            // 1. Production Trend
+            if (charts.trend) charts.trend.destroy();
             charts.trend = new Chart(document.getElementById('trendChart'), {
-                type: 'line', data: { labels: data.trend_data.map(d => 'W' + d.age), datasets: [{ label: 'Eggs', data: data.trend_data.map(d => d.eggs), borderColor: '#fbbf24', backgroundColor: 'rgba(251, 191, 36, 0.1)', fill: true, tension: 0.4 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks:{color:textColor} }, x:{ticks:{color:textColor}} } }
+                type: 'line',
+                data: {
+                    labels: data.trend_data.map(d => `W${d.age}`),
+                    datasets: [{
+                        label: 'Projected Eggs',
+                        data: data.trend_data.map(d => d.eggs),
+                        borderColor: '#fbbf24',
+                        backgroundColor: 'rgba(251, 191, 36, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: gridColor }, ticks: { color } },
+                        x: { grid: { display: false }, ticks: { color } }
+                    }
+                }
             });
-            if(charts.cost) charts.cost.destroy();
+
+            // 2. Cost Breakdown (Pie)
+            if (charts.cost) charts.cost.destroy();
             charts.cost = new Chart(document.getElementById('costChart'), {
-                type: 'doughnut', data: { labels: ['Feed', 'Birds', 'Infra'], datasets: [{ data: [data.economics.monthly_feed_cost_pkr, data.economics.bird_cost_total_pkr, data.economics.infrastructure_cost_total_pkr], backgroundColor: ['#fbbf24', '#10b981', '#3b82f6'] }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: textColor } } } }
+                type: 'doughnut',
+                data: {
+                    labels: ['Feed', 'Birds', 'Infra'],
+                    datasets: [{
+                        data: [data.economics.monthly_feed_cost_pkr, data.economics.bird_cost_total_pkr, data.economics.infrastructure_cost_total_pkr],
+                        backgroundColor: ['#fbbf24', '#10b981', '#3b82f6'],
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color, font: { size: 10 } } }
+                    },
+                    cutout: '70%'
+                }
             });
-            if(charts.climate) charts.climate.destroy();
-            charts.climate = new Chart(document.getElementById('climateChart'), {
-                type: 'bar', data: { labels: ['-5°C', 'Norm', '+5°C', '-10% H', '+10% H'], datasets: [{ label: 'Var', data: [data.predicted_eggs*0.85, data.predicted_eggs, data.predicted_eggs*0.75, data.predicted_eggs*0.95, data.predicted_eggs*0.90], backgroundColor: ['#3b82f6', '#fbbf24', '#ef4444', '#10b981', '#f59e0b'] }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales:{y:{ticks:{color:textColor}}, x:{ticks:{color:textColor}}} }
+
+            // 3. Feed vs Output (Bar)
+            if (charts.feedOutput) charts.feedOutput.destroy();
+            charts.feedOutput = new Chart(document.getElementById('feedOutputChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Daily'],
+                    datasets: [
+                        { label: 'Feed (kg)', data: [data.economics.daily_feed_kg], backgroundColor: '#3b82f6', borderRadius: 5 },
+                        { label: 'Eggs (x10)', data: [data.predicted_eggs / 10], backgroundColor: '#fbbf24', borderRadius: 5 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color, font: { size: 10 } } } },
+                    scales: {
+                        y: { grid: { color: gridColor }, ticks: { color } },
+                        x: { grid: { display: false }, ticks: { color } }
+                    }
+                }
             });
         }
 
@@ -439,32 +1047,35 @@
             const payload = {
                 eggs: document.getElementById('log-eggs').value,
                 feed_kg: document.getElementById('log-feed').value,
-                mortality: document.getElementById('log-mortality').value,
-                chickens: document.getElementById('log-birds').value,
+                chickens: document.getElementById('Amount_of_chicken').value,
                 temp: document.getElementById('Temperature').value,
                 humidity: document.getElementById('Humidity').value,
                 ammonia: document.getElementById('Ammonia').value,
+                mortality: 0,
                 date: new Date().toISOString().split('T')[0]
             };
             try {
-                const res = await fetch('/api/logs', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+                const res = await fetch('/api/logs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 const data = await res.json();
-                if(data.success) { alert("Daily log saved successfully!"); fetchAlerts(); }
-            } catch(e) { alert("Error saving log: " + e.message); }
+                if (data.success) { alert("Daily log saved successfully!"); }
+            } catch (e) { alert("Error saving log."); }
         }
 
         async function fetchAlerts() {
-            const res = await fetch('/api/alerts');
-            const data = await res.json();
-            const badge = document.getElementById('alert-badge');
-            const list = document.getElementById('alerts-list');
-            badge.innerText = data.alerts.length;
-            badge.style.display = data.alerts.length > 0 ? 'flex' : 'none';
-            list.innerHTML = data.alerts.map(a => `<div style="padding:0.8rem; border-bottom:1px solid rgba(255,255,255,0.05); font-size:0.75rem;">
-                <div style="color:var(--primary); font-weight:800; margin-bottom:4px;">${a.type}</div>
-                <div>${a.message}</div>
-                <div style="color:var(--text-muted); font-size:0.6rem; margin-top:4px;">${new Date(a.timestamp).toLocaleString()}</div>
-            </div>`).join('') || '<div style="text-align:center; color:var(--text-muted); padding:1rem;">No active alerts</div>';
+            try {
+                const res = await fetch('/api/alerts');
+                const data = await res.json();
+                const badge = document.getElementById('alert-badge');
+                const list = document.getElementById('alerts-list');
+                if (data.alerts && badge && list) {
+                    badge.innerText = data.alerts.length;
+                    badge.style.display = data.alerts.length > 0 ? 'flex' : 'none';
+                    list.innerHTML = data.alerts.map(a => `<div style="padding:0.8rem; border-bottom:1px solid rgba(255,255,255,0.05); font-size:0.75rem;">
+                        <div style="color:var(--primary); font-weight:800; margin-bottom:4px;">${a.type}</div>
+                        <div>${a.message}</div>
+                    </div>`).join('') || '<div style="text-align:center; color:var(--text-muted); padding:1rem;">No active alerts</div>';
+                }
+            } catch(e) {}
         }
 
         function toggleAlerts() {
@@ -472,161 +1083,40 @@
             drop.style.display = drop.style.display === 'none' ? 'block' : 'none';
         }
 
-        async function renderMarketTrends() {
-            const res = await fetch('/api/market_trends');
-            const data = await res.json();
-            const isDark = document.body.getAttribute('data-theme') === 'dark';
-            const textColor = isDark ? '#fff' : '#000';
-            
-            document.getElementById('market-current-val').innerText = data.current_price + ' PKR';
-            
-            if(charts.market) charts.market.destroy();
-            charts.market = new Chart(document.getElementById('marketChart'), {
-                type: 'line',
-                data: {
-                    labels: [...data.history.map((_, i) => 'Day ' + (i+1)), ...data.forecast.map((_, i) => 'Next ' + (i+1))],
-                    datasets: [
-                        { label: 'Historical', data: data.history, borderColor: '#3b82f6', backgroundColor: 'transparent', tension: 0.4 },
-                        { label: 'AI Forecast', data: [...new Array(data.history.length-1).fill(null), data.history[data.history.length-1], ...data.forecast], borderColor: '#fbbf24', borderDash: [5, 5], backgroundColor: 'transparent', tension: 0.4 }
-                    ]
-                },
-                options: { responsive: true, maintainAspectRatio: false, scales:{y:{ticks:{color:textColor}}, x:{ticks:{color:textColor}}} }
-            });
-        }
-
-        async function renderMonitoringCharts() {
-            const isDark = document.body.getAttribute('data-theme') === 'dark';
-            const textColor = isDark ? '#fff' : '#000';
-            
-            // Env Chart
-            if(charts.env) charts.env.destroy();
-            charts.env = new Chart(document.getElementById('envChart'), {
-                type: 'line',
-                data: {
-                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                    datasets: [
-                        { label: 'Temp', data: [22, 23, 24, 22, 21, 23, 22], borderColor: '#ef4444' },
-                        { label: 'Humidity', data: [60, 62, 65, 61, 59, 60, 61], borderColor: '#3b82f6' }
-                    ]
-                },
-                options: { responsive: true, maintainAspectRatio: false, scales:{y:{ticks:{color:textColor}}, x:{ticks:{color:textColor}}} }
-            });
-
-            // Default empty data
-            let labels = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7'];
-            let mortalityData = [0,0,0,0,0,0,0];
-            let fcrData = [0,0,0,0,0,0,0];
-
-            try {
-                // Fetch real data from DB
-                const res = await fetch('/api/farm_logs');
-                const data = await res.json();
-                if(data.success && data.logs.length > 0) {
-                    labels = data.logs.map(log => new Date(log.date).toLocaleDateString(undefined, {month:'short', day:'numeric'}));
-                    mortalityData = data.logs.map(log => log.mortality);
-                    
-                    // Calculate FCR: Feed(kg) / EggMass(kg)
-                    fcrData = data.logs.map(log => {
-                        const eggMassKg = log.eggs * 0.055; // 55g per egg avg
-                        return eggMassKg > 0 ? parseFloat((log.feed_kg / eggMassKg).toFixed(2)) : 0;
-                    });
-                }
-            } catch(e) { console.error("Error loading real chart data:", e); }
-
-            if(charts.mortality) charts.mortality.destroy();
-            charts.mortality = new Chart(document.getElementById('mortalityChart'), {
-                type: 'bar',
-                data: { labels: labels, datasets: [{ label: 'Mortality (Birds)', data: mortalityData, backgroundColor: '#ef4444', borderRadius: 4 }] },
-                options: { responsive: true, maintainAspectRatio: false, scales:{y:{ticks:{color:textColor}}, x:{ticks:{color:textColor}}} }
-            });
-
-            if(charts.fcr) charts.fcr.destroy();
-            charts.fcr = new Chart(document.getElementById('fcrChart'), {
-                type: 'line',
-                data: { labels: labels, datasets: [{ label: 'FCR Index', data: fcrData, borderColor: '#10b981', tension: 0.4, borderWidth: 3 }] },
-                options: { responsive: true, maintainAspectRatio: false, scales:{y:{ticks:{color:textColor}}, x:{ticks:{color:textColor}}} }
-            });
-        }
-
         async function loadHistory() {
             try {
                 const res = await fetch('/api/history');
                 const data = await res.json();
                 const tbody = document.getElementById('history-tbody');
-                tbody.innerHTML = data.history.map(r => `<tr style="border-bottom: 1px solid rgba(255,255,255,0.05);"><td style="padding:1rem;">${new Date(r.timestamp).toLocaleDateString()}</td><td>${r.chickens}</td><td>${r.breed}</td><td style="color:var(--primary); font-weight:700;">${r.predicted_eggs}</td><td style="color:var(--success); font-weight:700;">${(r.predicted_eggs * 22 * 30).toLocaleString()} PKR</td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center; padding:2rem; color:var(--text-muted);">No records found</td></tr>';
-            } catch(e) { console.error("History Load Error:", e); }
+                tbody.innerHTML = data.history.map(r => `<tr><td style="padding:1rem;">${new Date(r.timestamp).toLocaleDateString()}</td><td>${r.chickens}</td><td>${r.breed}</td><td>${r.predicted_eggs}</td><td>${r.total_startup_cost.toLocaleString()} PKR</td></tr>`).join('');
+            } catch (e) {}
         }
 
-        async function runDiagnosis() {
-            const checks = document.querySelectorAll('#symptom-list input:checked');
-            const symptoms = Array.from(checks).map(c => c.value);
-            if(symptoms.length === 0) return alert("Please select at least one symptom.");
-            
-            const res = await fetch('/api/health/diagnose', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({symptoms}) });
-            const data = await res.json();
-            
-            const resDiv = document.getElementById('diagnosis-result');
-            if(!data.diagnosis || data.diagnosis.length === 0) {
-                resDiv.innerHTML = '<div style="background:rgba(255,255,255,0.05); padding:1rem; border-radius:10px;">No matching disease found. Consult a vet.</div>';
-                return;
-            }
-            
-            let html = '';
-            const sevColor = sev => sev === 'Critical' ? 'var(--danger)' : sev === 'High' ? '#f59e0b' : '#3b82f6';
-            
-            // Primary Diagnosis (Highest Score)
-            const primary = data.diagnosis[0];
-            const isUncertain = primary.score < 50;
-            
-            if(isUncertain) {
-                html += `
-                <div style="background:rgba(245, 158, 11, 0.1); border-left:4px solid #f59e0b; padding:1rem; border-radius:10px; margin-bottom:1rem;">
-                    <div style="color:#f59e0b; font-weight:900; font-size:1.1rem; display:flex; align-items:center; gap:10px;">
-                        <i class="fas fa-exclamation-triangle"></i> UNCERTAIN DIAGNOSIS
-                    </div>
-                    <p style="font-size:0.85rem; margin-top:0.5rem; color:var(--text-color);">The system confidence is below 50%. The selected symptoms are too vague or don't strongly match a single known disease profile. <b>Please consult a certified veterinarian immediately.</b></p>
-                </div>
-                `;
-            }
-            
-            html += `
-                <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:5px; font-weight:800;">${isUncertain ? 'TOP POTENTIAL MATCH' : 'PRIMARY DIAGNOSIS'}</div>
-                <div style="background:rgba(239, 68, 68, 0.05); padding:1rem; border-radius:10px; margin-bottom:1rem; border-left:4px solid ${isUncertain ? '#f59e0b' : 'var(--danger)'}">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-weight:800; color:${isUncertain ? '#f59e0b' : 'var(--danger)'}; font-size:1.1rem;">${primary.disease}</span>
-                        <div style="display:flex; gap:5px; align-items:center;">
-                            <span style="font-size:0.6rem; background:${sevColor(primary.severity)}; color:white; padding:2px 6px; border-radius:4px; font-weight:800;">${primary.severity.toUpperCase()}</span>
-                            <span style="font-size:0.7rem; background:rgba(0,0,0,0.3); color:white; padding:3px 10px; border-radius:10px; font-weight:700;">${primary.score}% Match</span>
-                        </div>
-                    </div>
-                    <p style="font-size:0.85rem; margin:0.8rem 0; line-height:1.4; color:var(--text-color);">${primary.treatment}</p>
-                    <div style="margin-top:0.5rem;">
-                        <span style="font-size:0.65rem; color:var(--text-muted); display:block; margin-bottom:6px;">RECOMMENDED MEDS:</span>
-                        ${primary.meds.map(m => `<span style="font-size:0.75rem; background:rgba(59, 130, 246, 0.15); color:#3b82f6; padding:4px 8px; border-radius:4px; margin-right:6px;">${m}</span>`).join('')}
-                    </div>
-                </div>
-            `;
-            
-            // Secondary Diagnoses (Differential)
-            if (data.diagnosis.length > 1) {
-                html += `<div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:5px; font-weight:800; margin-top:1.5rem;">DIFFERENTIAL (ALTERNATIVE) DIAGNOSES</div>`;
-                for (let i = 1; i < data.diagnosis.length; i++) {
-                    const diff = data.diagnosis[i];
-                    html += `
-                        <div style="background:rgba(255,255,255,0.02); padding:0.8rem; border-radius:8px; margin-bottom:0.5rem; border-left:3px solid var(--warning)">
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <div style="display:flex; flex-direction:column;">
-                                    <span style="font-weight:700; color:var(--primary); font-size:0.9rem;">${diff.disease}</span>
-                                    <span style="font-size:0.6rem; color:${sevColor(diff.severity)}; font-weight:800; margin-top:3px;">Severity: ${diff.severity}</span>
-                                </div>
-                                <span style="font-size:0.65rem; background:rgba(0,0,0,0.3); padding:2px 8px; border-radius:10px;">${diff.score}% Match</span>
-                            </div>
-                        </div>
-                    `;
-                }
-            }
-            
-            resDiv.innerHTML = html + '<p style="font-size:0.6rem; color:var(--text-muted); text-align:center; margin-top:1.5rem; border-top:1px solid rgba(255,255,255,0.05); padding-top:1rem;">⚠️ AI diagnosis is for information only. Contact a certified veterinarian for official treatment.</p>';
+        async function renderMarketTrends() {
+            try {
+                const res = await fetch('/api/market_trends');
+                const data = await res.json();
+                document.getElementById('market-current-val').innerText = data.current_price + ' PKR';
+                const isDark = document.body.getAttribute('data-theme') === 'dark';
+                const color = isDark ? '#94a3b8' : '#64748b';
+                if (charts.market) charts.market.destroy();
+                charts.market = new Chart(document.getElementById('marketChart'), {
+                    type: 'line',
+                    data: { labels: ['H1', 'H2', 'H3', 'C', 'F1', 'F2', 'F3'], datasets: [{ label: 'Price', data: [...data.history.slice(-3), data.current_price, ...data.forecast.slice(0, 3)], borderColor: '#fbbf24', tension: 0.4 }] },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color } }, x: { ticks: { color } } } }
+                });
+            } catch (e) {}
+        }
+
+        async function renderMonitoringCharts() {
+            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            const color = isDark ? '#94a3b8' : '#64748b';
+            if (charts.env) charts.env.destroy();
+            charts.env = new Chart(document.getElementById('envChart'), {
+                type: 'line',
+                data: { labels: ['M', 'T', 'W', 'T', 'F', 'S', 'S'], datasets: [{ label: 'Temp', data: [22, 23, 24, 22, 21, 23, 22], borderColor: '#ef4444' }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color } }, x: { ticks: { color } } } }
+            });
         }
 
         async function updateVaccinations() {
@@ -634,37 +1124,32 @@
             const res = await fetch('/api/health/vaccinations?age=' + age);
             const data = await res.json();
             const list = document.getElementById('vaccination-list');
-            list.innerHTML = data.schedule.map(v => `
-                <div style="padding:1rem; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; align-items:center; gap:1rem;">
-                    <div style="background:var(--primary); color:#000; width:35px; height:35px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:0.75rem;">W${v.week}</div>
-                    <div>
-                        <div style="font-weight:700; font-size:0.85rem;">${v.vaccine}</div>
-                        <div style="font-size:0.7rem; color:var(--text-muted);">Against ${v.disease}</div>
-                    </div>
-                </div>
-            `).join('') || '<div style="padding:2rem; text-align:center; color:var(--text-muted);">No upcoming vaccines for this age.</div>';
+            list.innerHTML = data.schedule.map(v => `<div style="padding:0.8rem; border-bottom:1px solid rgba(255,255,255,0.05);"><b>W${v.week}:</b> ${v.vaccine}</div>`).join('');
         }
 
         async function resetData() {
-            if(!confirm("Are you sure you want to delete all historical logs and monitoring data? This cannot be undone!")) return;
-            try {
-                const res = await fetch('/api/reset_data', { method: 'POST' });
-                const data = await res.json();
-                if(data.success) {
-                    alert("All data has been reset successfully.");
-                    location.reload();
-                } else {
-                    alert("Error: " + data.error);
-                }
-            } catch(e) {
-                alert("Failed to reset data.");
-                console.error(e);
+            if (confirm("Reset all data?")) {
+                await fetch('/api/reset_data', { method: 'POST' });
+                location.reload();
             }
         }
 
-        // Initial calls
         fetchAlerts();
-        setInterval(fetchAlerts, 30000); // Check every 30s
+        setInterval(fetchAlerts, 30000);
+
+        function hideLoader() {
+            const loader = document.getElementById('loader');
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 500);
+            }
+        }
+
+        if (document.readyState === 'complete') {
+            hideLoader();
+        } else {
+            window.addEventListener('load', hideLoader);
+        }
     </script>
 </body>
 </html>

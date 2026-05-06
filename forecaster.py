@@ -137,6 +137,59 @@ class FarmIntelligence:
         return sorted(results, key=lambda x: (-x['score'], x['disease']))
 
     @staticmethod
+    def calculate_risk_level(temp, humidity, ammonia):
+        """
+        Calculate a simple risk score (0-100) and category.
+        """
+        risk_score = 0
+        if temp > 28 or temp < 15: risk_score += 40
+        elif temp > 26 or temp < 18: risk_score += 20
+        
+        if ammonia > 25: risk_score += 50
+        elif ammonia > 15: risk_score += 25
+        
+        if humidity > 75 or humidity < 40: risk_score += 20
+        
+        risk_score = min(risk_score, 100)
+        
+        if risk_score >= 70: return "High", risk_score, "#ef4444"
+        if risk_score >= 30: return "Medium", risk_score, "#fbbf24"
+        return "Low", risk_score, "#10b981"
+
+    @staticmethod
+    def generate_ai_explanation(data, prediction_eff, econ):
+        """
+        Generate human-friendly insights based on farm conditions.
+        """
+        temp = float(data.get('Temperature', 22))
+        hum = float(data.get('Humidity', 60))
+        amm = float(data.get('Ammonia', 10))
+        age = float(data.get('Age', 28))
+        breed = data.get('Breed', 'commercial').capitalize()
+        
+        insights = []
+        
+        # Production Insights
+        if prediction_eff > 0.85:
+            insights.append(f"Production is high due to optimal temperature ({temp}°C) and humidity ({hum}%).")
+        elif prediction_eff < 0.6:
+            if temp > 28: insights.append(f"Heat stress is significantly dropping yield. Current temp: {temp}°C.")
+            if amm > 20: insights.append(f"High ammonia ({amm}ppm) is causing respiratory stress and lowering production.")
+            if age > 60: insights.append(f"Yield is naturally declining as the {breed} flock age ({age} weeks) is past peak.")
+        
+        # Financial Insights
+        profit = econ.get('monthly_profit_pkr', 0)
+        if profit > 0:
+            roi = econ.get('roi_percentage', 0)
+            if roi > 10:
+                insights.append(f"Strong ROI ({round(roi, 1)}%). The current feed-to-egg conversion is highly profitable.")
+            insights.append(f"Profit can increase by ~5-8% if feed efficiency is optimized.")
+        else:
+            insights.append("Immediate intervention needed: Operating at a loss. Check feed costs or egg pricing.")
+            
+        return insights
+
+    @staticmethod
     def get_vaccination_schedule(age_weeks):
         # Comprehensive Commercial Schedule including Adult Boosters
         schedule = [
