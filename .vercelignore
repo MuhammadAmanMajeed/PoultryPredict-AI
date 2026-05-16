@@ -1,0 +1,7 @@
+.venv/
+.idea/
+__pycache__/
+Egg_Production_Large.csv
+static/plots/
+*.ipynb
+history.db
