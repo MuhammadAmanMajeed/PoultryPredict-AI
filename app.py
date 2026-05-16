@@ -45,8 +45,10 @@ load_model()
 
 # --- DATABASE HELPERS ---
 def get_db_connection():
-    # Put the DB file next to the source code (cross-platform)
-    db_path = os.path.join(os.path.dirname(__file__), "history.db")
+    if os.environ.get('VERCEL') == '1':
+        db_path = '/tmp/history.db'
+    else:
+        db_path = os.path.join(os.path.dirname(__file__), "history.db")
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
