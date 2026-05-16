@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PoultryPredict AI | Intelligence Dashboard</title>
+    <title>FlockSense AI | Intelligence Dashboard</title>
     <link
         href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@300;400;600;700&display=swap"
         rel="stylesheet">
@@ -485,7 +485,10 @@
     </div>
 
     <div class="mobile-header">
-        <div style="color: var(--primary); font-weight: 800; font-size: 1.2rem;">🐔 PoultryPredict</div>
+        <div style="color: var(--primary); font-weight: 800; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-feather-pointed"></i> FlockSense 
+            <span style="background: var(--primary); color: #000; padding: 2px 6px; border-radius: 6px; font-size: 0.65rem; line-height: 1;">AI</span>
+        </div>
         <div style="display:flex; gap:15px; align-items:center;">
             <i class="fas fa-sun" style="font-size: 1.2rem; cursor: pointer; color: var(--text-muted);"
                 onclick="toggleTheme()" id="theme-toggle-mobile"></i>
@@ -497,7 +500,10 @@
         <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
         <div class="sidebar" id="sidebar">
-        <div class="brand">🐔 PoultryPredict AI</div>
+        <div class="brand">
+            <i class="fas fa-feather-pointed"></i> FlockSense 
+            <span style="background: var(--primary); color: #000; padding: 2px 6px; border-radius: 6px; font-size: 0.75rem; margin-left: 5px; line-height: 1;">AI</span>
+        </div>
         <div class="nav-item active" onclick="switchTab('dashboard')"><i class="fas fa-grid-2"></i> Dashboard</div>
         <div class="nav-item" onclick="switchTab('monitoring')"><i class="fas fa-temperature-half"></i> Farm Monitoring
         </div>
@@ -603,8 +609,8 @@
                         </select>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
-                        <div class="form-group"><label>Feed PKR/kg</label><input type="number" id="Feed_Price" class="form-input" value="215"></div>
-                        <div class="form-group"><label>Egg PKR/ea</label><input type="number" id="Egg_Price" class="form-input" value="24"></div>
+                        <div class="form-group"><label>Feed PKR/kg</label><input type="number" id="Feed_Price" class="form-input" value="260"></div>
+                        <div class="form-group"><label>Egg PKR/ea</label><input type="number" id="Egg_Price" class="form-input" value="30"></div>
                     </div>
                     
                     <div style="text-align: center; margin-top: 1rem;">
@@ -647,6 +653,12 @@
                         <div class="card">
                             <div class="card-title">📉 Production & Efficiency Trends</div>
                             <div style="height: 350px;"><canvas id="trendChart"></canvas></div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-title">🧠 AI Decision Breakdown — How AI Thinks</div>
+                            <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem;">Shows which input factors helped (green) or hurt (red) this prediction.</p>
+                            <div style="height: 320px;"><canvas id="shapChart"></canvas></div>
                         </div>
                     </div>
                 </div>
@@ -1041,6 +1053,51 @@
                     }
                 }
             });
+
+            // 4. SHAP-like Feature Contribution Chart
+            if (data.feature_contributions && data.feature_contributions.length > 0) {
+                if (charts.shap) charts.shap.destroy();
+                const contribs = data.feature_contributions;
+                charts.shap = new Chart(document.getElementById('shapChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: contribs.map(c => c.label),
+                        datasets: [{
+                            label: 'Impact on Production',
+                            data: contribs.map(c => c.impact),
+                            backgroundColor: contribs.map(c => c.impact >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(239, 68, 68, 0.8)'),
+                            borderColor: contribs.map(c => c.impact >= 0 ? '#10b981' : '#ef4444'),
+                            borderWidth: 1,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(ctx) {
+                                        const c = contribs[ctx.dataIndex];
+                                        const dir = c.impact >= 0 ? '▲ Helping' : '▼ Hurting';
+                                        return `${dir} | Value: ${c.value} | Importance: ${(c.importance * 100).toFixed(1)}%`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: gridColor },
+                                ticks: { color },
+                                title: { display: true, text: '← Hurting Production | Helping Production →', color, font: { size: 10 } }
+                            },
+                            y: { grid: { display: false }, ticks: { color, font: { size: 11, weight: 'bold' } } }
+                        }
+                    }
+                });
+            }
         }
 
         async function submitDailyLog() {
@@ -1075,7 +1132,9 @@
                         <div>${a.message}</div>
                     </div>`).join('') || '<div style="text-align:center; color:var(--text-muted); padding:1rem;">No active alerts</div>';
                 }
-            } catch(e) {}
+            } catch (e) {
+                console.error("Error in fetchAlerts:", e);
+            }
         }
 
         function toggleAlerts() {
@@ -1105,18 +1164,90 @@
                     data: { labels: ['H1', 'H2', 'H3', 'C', 'F1', 'F2', 'F3'], datasets: [{ label: 'Price', data: [...data.history.slice(-3), data.current_price, ...data.forecast.slice(0, 3)], borderColor: '#fbbf24', tension: 0.4 }] },
                     options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color } }, x: { ticks: { color } } } }
                 });
-            } catch (e) {}
+            } catch (e) {
+                console.error("Error in renderMarketTrends:", e);
+                alert("Could not load market trends. Make sure the server is restarted and running.");
+            }
         }
 
         async function renderMonitoringCharts() {
-            const isDark = document.body.getAttribute('data-theme') === 'dark';
-            const color = isDark ? '#94a3b8' : '#64748b';
-            if (charts.env) charts.env.destroy();
-            charts.env = new Chart(document.getElementById('envChart'), {
-                type: 'line',
-                data: { labels: ['M', 'T', 'W', 'T', 'F', 'S', 'S'], datasets: [{ label: 'Temp', data: [22, 23, 24, 22, 21, 23, 22], borderColor: '#ef4444' }] },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color } }, x: { ticks: { color } } } }
-            });
+            try {
+                const res = await fetch('/api/chart_data');
+                const data = await res.json();
+                
+                const isDark = document.body.getAttribute('data-theme') === 'dark';
+                const color = isDark ? '#94a3b8' : '#64748b';
+                
+                let labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+                let temps = [22, 23, 24, 22, 21, 23, 22];
+                let mortality = [0, 1, 0, 0, 2, 0, 0];
+                let fcr = [1.8, 1.85, 1.75, 1.8, 1.9, 1.82, 1.8];
+
+                if (data.success && data.labels && data.labels.length > 0) {
+                    labels = data.labels.slice(-7);
+                    temps = data.temperature.slice(-7);
+                    mortality = data.mortality.slice(-7);
+                    // simple FCR mock based on history if available
+                    fcr = data.feed_kg.slice(-7).map((f, i) => {
+                        const e = data.eggs.slice(-7)[i];
+                        return (e > 0 && f > 0) ? (f / (e * 0.05)) : 1.8;
+                    });
+                }
+
+                if (charts.env) charts.env.destroy();
+                charts.env = new Chart(document.getElementById('envChart'), {
+                    type: 'line',
+                    data: { labels: labels, datasets: [{ label: 'Temp °C', data: temps, borderColor: '#ef4444', tension: 0.4 }] },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color } }, x: { ticks: { color } } } }
+                });
+
+                if (charts.mortality) charts.mortality.destroy();
+                charts.mortality = new Chart(document.getElementById('mortalityChart'), {
+                    type: 'bar',
+                    data: { labels: labels, datasets: [{ label: 'Mortality', data: mortality, backgroundColor: '#10b981' }] },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color } }, x: { ticks: { color } } } }
+                });
+
+                if (charts.fcr) charts.fcr.destroy();
+                charts.fcr = new Chart(document.getElementById('fcrChart'), {
+                    type: 'line',
+                    data: { labels: labels, datasets: [{ label: 'FCR (Feed / Egg Mass)', data: fcr, borderColor: '#3b82f6', tension: 0.4, fill: true, backgroundColor: 'rgba(59, 130, 246, 0.1)' }] },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color } }, x: { ticks: { color } } } }
+                });
+            } catch (e) {
+                console.error("Error loading monitoring charts", e);
+            }
+        }
+
+        async function runDiagnosis() {
+            const symptoms = Array.from(document.querySelectorAll('#symptom-list input:checked')).map(cb => cb.value);
+            if (symptoms.length === 0) {
+                alert('Please select at least one symptom.');
+                return;
+            }
+            try {
+                const res = await fetch('/api/health/diagnose', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ symptoms })
+                });
+                const data = await res.json();
+                const resultDiv = document.getElementById('diagnosis-result');
+                if (data.diagnosis && data.diagnosis.length > 0) {
+                    resultDiv.innerHTML = data.diagnosis.map(d => `
+                        <div style="padding: 1rem; border-left: 4px solid ${d.severity === 'Critical' ? 'var(--danger)' : 'var(--primary)'}; background: var(--input-bg); margin-bottom: 1rem; border-radius: 8px;">
+                            <h4 style="color: var(--primary);">${d.disease} (Score: ${d.score}%)</h4>
+                            <p style="font-size: 0.8rem; margin: 0.5rem 0;"><b>Severity:</b> ${d.severity}</p>
+                            <p style="font-size: 0.8rem; margin: 0.5rem 0;"><b>Treatment:</b> ${d.treatment}</p>
+                            <p style="font-size: 0.8rem; margin: 0.5rem 0;"><b>Meds:</b> ${d.meds.join(', ')}</p>
+                        </div>
+                    `).join('');
+                } else {
+                    resultDiv.innerHTML = '<div style="padding: 1rem; color: var(--success);">No critical diseases matched. Monitor the flock closely.</div>';
+                }
+            } catch (e) {
+                alert('Error analyzing health.');
+            }
         }
 
         async function updateVaccinations() {

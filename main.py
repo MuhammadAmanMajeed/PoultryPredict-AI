@@ -189,10 +189,25 @@ class EggProductionPredictor:
 
     def save_model(self):
         os.makedirs("models", exist_ok=True)
-        data = {"model": self.best_model, "scaler": self.scaler, "feature_names": self.features}
+        X_train, X_test, y_train, y_test = self.prepare_data()
+        y_pred = self.best_model.predict(X_test)
+        mse = mean_squared_error(y_test, y_pred)
+        metrics = {
+            'r2': round(r2_score(y_test, y_pred), 4),
+            'mae': round(mean_absolute_error(y_test, y_pred), 4),
+            'mse': round(mse, 4),
+            'rmse': round(mse ** 0.5, 4),
+            'dataset_size': len(self.df)
+        }
+        data = {
+            "model": self.best_model,
+            "scaler": self.scaler,
+            "feature_names": self.features,
+            "metrics": metrics
+        }
         with open("models/egg_production_model.pkl", "wb") as f:
             pickle.dump(data, f)
-        print("Model Saved Successfully")
+        print(f"Model Saved Successfully | R2: {metrics['r2']} | MAE: {metrics['mae']}")
 
     def predict(self, input_dict):
         df = pd.DataFrame([input_dict])[self.features]
@@ -201,7 +216,7 @@ class EggProductionPredictor:
 
 
 def main():
-    predictor = EggProductionPredictor("Egg_Production.csv")
+    predictor = EggProductionPredictor("Egg_Production_Large.csv")
     predictor.load_data()
     predictor.feature_engineering()
     X_train, X_test, y_train, y_test = predictor.prepare_data()
