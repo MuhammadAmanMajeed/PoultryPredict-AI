@@ -580,6 +580,14 @@
                         <input type="number" id="Ammonia" class="form-input" value="15" oninput="updateIndicators()">
                         <div id="msg-Ammonia" class="input-msg"></div>
                     </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+                        <div class="form-group"><label>Light (Lux)</label><input type="number" id="Light_Intensity" class="form-input" value="50"></div>
+                        <div class="form-group"><label>Light (Hrs)</label><input type="number" id="Light_Duration" class="form-input" value="16"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Noise (dB)</label>
+                        <input type="number" id="Noise" class="form-input" value="45">
+                    </div>
                     <div class="form-group">
                         <label>Bird Type</label>
                         <div class="badge-select" id="breed-select">
@@ -916,9 +924,9 @@
                 Season: document.getElementById('Season').value,
                 Feed_Price_per_kg: document.getElementById('Feed_Price').value,
                 Egg_Price_per_unit: document.getElementById('Egg_Price').value,
-                Noise: 45,
-                Light_Intensity: 50,
-                Light_Duration: 16
+                Noise: document.getElementById('Noise').value,
+                Light_Intensity: document.getElementById('Light_Intensity').value,
+                Light_Duration: document.getElementById('Light_Duration').value
             };
 
             try {
