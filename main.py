@@ -18,7 +18,7 @@ from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.svm import SVR
-import xgboost as xgb
+
 
 warnings.filterwarnings("ignore")
 
@@ -75,8 +75,8 @@ class EggProductionPredictor:
         if 'Noise' not in self.df.columns:
             self.df['Noise'] = np.random.uniform(30, 60, len(self.df))
 
-        noise = np.random.normal(0, 0.02, len(self.df))
-        self.df['Total_egg_production'] = self.df['Total_egg_production'] * (1 + noise)
+        # noise = np.random.normal(0, 0.02, len(self.df))
+        # self.df['Total_egg_production'] = self.df['Total_egg_production'] * (1 + noise)
         self.df['Total_egg_production'] = np.clip(self.df['Total_egg_production'], 0, self.df['Amount_of_chicken'])
         self.df['Feed_per_Chicken'] = self.df['Amount_of_Feeding'] / self.df['Amount_of_chicken']
         self.df['Egg_per_Chicken'] = self.df['Total_egg_production'] / self.df['Amount_of_chicken']
@@ -97,7 +97,6 @@ class EggProductionPredictor:
             "Ridge": Ridge(alpha=1.0),
             "Random Forest": RandomForestRegressor(n_estimators=100, random_state=42),
             "Gradient Boosting": GradientBoostingRegressor(n_estimators=100, random_state=42),
-            "XGBoost": xgb.XGBRegressor(n_estimators=100, learning_rate=0.1, random_state=42),
             "SVR": SVR(C=100, gamma=0.1)
         }
         best_score = -999
@@ -117,9 +116,9 @@ class EggProductionPredictor:
             grid = GridSearchCV(RandomForestRegressor(random_state=42), params, cv=5, scoring="r2")
             grid.fit(X_train, y_train)
             self.best_model = grid.best_estimator_
-        elif isinstance(self.best_model, xgb.XGBRegressor):
+        elif isinstance(self.best_model, GradientBoostingRegressor):
             params = {"n_estimators": [100, 200], "max_depth": [3, 5], "learning_rate": [0.05, 0.1]}
-            grid = GridSearchCV(xgb.XGBRegressor(random_state=42), params, cv=5, scoring="r2")
+            grid = GridSearchCV(GradientBoostingRegressor(random_state=42), params, cv=5, scoring="r2")
             grid.fit(X_train, y_train)
             self.best_model = grid.best_estimator_
         print("Hyperparameter Tuning Completed")

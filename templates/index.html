@@ -110,6 +110,24 @@
             width: 6px;
         }
 
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1001;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
         .sidebar::-webkit-scrollbar-track {
             background: transparent;
         }
@@ -185,6 +203,9 @@
                 left: 0;
                 top: 0;
                 transform: translateX(-100%);
+                z-index: 1005;
+                height: 100vh;
+                box-shadow: 5px 0 15px rgba(0,0,0,0.2);
             }
             .sidebar.active {
                 transform: translateX(0);
@@ -193,6 +214,28 @@
                 width: 100%;
                 padding: 1.5rem;
                 padding-top: 80px;
+            }
+            .mobile-header {
+                display: flex;
+            }
+            .header {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .highlight-cards {
+                grid-template-columns: 1fr;
+            }
+            .mini-grid {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            .validation-grid {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 1rem;
             }
         }
 
@@ -676,9 +719,9 @@
                     <div class="card">
                         <div class="card-title">💸 Cost Breakdown</div>
                         <div style="height: 220px; margin-bottom: 1rem;"><canvas id="costChart"></canvas></div>
-                        <div class="mini-grid">
-                            <div class="mini-card"><div class="val" id="res-startup" style="font-size: 1rem;">0</div><div class="lbl">Startup</div></div>
-                            <div class="mini-card"><div class="val" id="res-feed" style="font-size: 1rem;">0</div><div class="lbl">Feed/Mo</div></div>
+                        <div class="mini-grid" style="display: grid; gap: 1rem; grid-template-columns: 1fr 1fr;">
+                            <div class="mini-card" style="background: var(--bg-dark); padding: 1rem; border-radius: 12px; text-align: center;"><div class="val" id="res-startup" style="font-size: 1.2rem; font-weight: bold; color: var(--primary);">0</div><div class="lbl" style="font-size: 0.75rem; color: var(--text-muted);">Startup</div></div>
+                            <div class="mini-card" style="background: var(--bg-dark); padding: 1rem; border-radius: 12px; text-align: center;"><div class="val" id="res-feed" style="font-size: 1.2rem; font-weight: bold; color: var(--primary);">0</div><div class="lbl" style="font-size: 0.75rem; color: var(--text-muted);">Feed/Mo</div></div>
                         </div>
                     </div>
                     <div class="card">
@@ -702,7 +745,7 @@
                 <div class="card-title">Environmental Trends (Last 7 Days)</div>
                 <div style="height: 400px;"><canvas id="envChart"></canvas></div>
             </div>
-            <div class="mini-grid">
+            <div class="mini-grid" style="display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
                 <div class="card">
                     <div class="card-title">Mortality Tracker</div>
                     <div style="height: 250px;"><canvas id="mortalityChart"></canvas></div>
@@ -726,24 +769,24 @@
         </div>
 
         <div id="validation-view" class="tab-view" style="display: none;">
-            <div class="validation-grid">
+            <div class="validation-grid" style="display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
                 <div class="card">
-                    <div class="card-title">Learning Curves</div><img src="/static/plots/learning_curves.png">
+                    <div class="card-title">Learning Curves</div><img src="/static/plots/learning_curves.png" style="width: 100%; height: auto; border-radius: 8px;">
                 </div>
                 <div class="card">
-                    <div class="card-title">Residual Plot</div><img src="/static/plots/residual_plot.png">
+                    <div class="card-title">Residual Plot</div><img src="/static/plots/residual_plot.png" style="width: 100%; height: auto; border-radius: 8px;">
                 </div>
                 <div class="card">
                     <div class="card-title">Feature Importance</div><img
-                        src="/static/plots/feature_importance_model.png">
+                        src="/static/plots/feature_importance_model.png" style="width: 100%; height: auto; border-radius: 8px;">
                 </div>
                 <div class="card">
-                    <div class="card-title">Noise Robustness</div><img src="/static/plots/noise_simulation.png">
+                    <div class="card-title">Noise Robustness</div><img src="/static/plots/noise_simulation.png" style="width: 100%; height: auto; border-radius: 8px;">
                 </div>
             </div>
         </div>
         <div id="health-view" class="tab-view" style="display: none;">
-            <div class="mini-grid">
+            <div class="mini-grid" style="display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
                 <div class="card">
                     <div class="card-title">Symptom Checker (AI Diagnostic)</div>
                     <div id="symptom-list"
