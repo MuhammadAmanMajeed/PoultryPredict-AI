@@ -17,6 +17,13 @@
             --glass-border: rgba(255, 255, 255, 0.1);
         }
 
+        ::view-transition-group(*),
+        ::view-transition-old(*),
+        ::view-transition-new(*) {
+            animation-duration: 0.25s;
+            animation-timing-function: cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
 
         body {
@@ -57,30 +64,74 @@
         }
 
         .logo-area { text-align: center; margin-bottom: 1rem; }
-        .logo-area i { font-size: 1.8rem; color: var(--primary); margin-bottom: 0.5rem; }
-        .logo-area h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 0.2rem; }
-        .logo-area p { color: var(--text-muted); font-size: 0.9rem; }
-
-
-        .input-group { margin-bottom: 1rem; }
-        .input-group label {
-            display: block; font-size: 0.8rem; font-weight: 700; color: var(--primary);
-            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.4rem;
+        .logo-area i { font-size: 1.8rem; color: var(--primary); margin-bottom: 0.5rem; animation: float 3s ease-in-out infinite; }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+            100% { transform: translateY(0px); }
         }
+
+        .input-group, .btn, .footer-links {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes slideUpFade {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .input-group:nth-child(1) { animation-delay: 0.1s; }
+        .input-group:nth-child(2) { animation-delay: 0.2s; }
+        .input-group:nth-child(3) { animation-delay: 0.3s; }
+        .btn { animation-delay: 0.4s; }
+        .footer-links { animation-delay: 0.5s; }
+
         .input-field {
             width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
             color: white; padding: 0.8rem 1rem; border-radius: 12px; font-size: 1rem;
             transition: all 0.3s ease;
         }
-        .input-field:focus { outline: none; border-color: var(--primary); background: rgba(0,0,0,0.5); }
+        .input-field:focus { 
+            outline: none; border-color: var(--primary); background: rgba(0,0,0,0.5); 
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+        }
+        .input-field:not(:placeholder-shown):valid { border-color: var(--primary); }
+        .input-field:not(:placeholder-shown):invalid { border-color: #ef4444; }
+
+        .password-wrapper { position: relative; display: flex; align-items: center; }
+        .password-toggle { position: absolute; right: 1rem; color: var(--text-muted); cursor: pointer; transition: color 0.3s ease; }
+        .password-toggle:hover { color: var(--primary); }
 
         .btn {
             background: var(--primary); color: #fff; font-weight: 800; padding: 0.9rem;
             border: none; border-radius: 12px; cursor: pointer; width: 100%;
             font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;
             transition: all 0.3s ease; margin-top: 0.5rem;
+            position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; gap: 8px;
         }
+        .btn::after {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
+            transform: rotate(45deg) translateY(-100%); transition: transform 0.6s ease;
+        }
+        .btn:hover::after { transform: rotate(45deg) translateY(100%); }
         .btn:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 15px 30px -10px rgba(16, 185, 129, 0.4); }
+
+        .spinner {
+            display: none; width: 20px; height: 20px;
+            border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .particle {
+            position: absolute; width: 8px; height: 8px; background: var(--primary);
+            border-radius: 50%; pointer-events: none; z-index: 9999;
+            animation: explode 1s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+        }
+        @keyframes explode {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+        }
 
         .footer-links { margin-top: 1.5rem; text-align: center; font-size: 0.9rem; color: var(--text-muted); }
         .footer-links a { color: var(--primary); text-decoration: none; font-weight: 700; margin-left: 5px; }
@@ -98,7 +149,7 @@
             <h1 style="display: flex; align-items: center; justify-content: center; gap: 8px;">
                 FlockSense <span style="background: var(--primary); color: #000; padding: 2px 8px; border-radius: 6px; font-size: 1rem; line-height: 1; margin-top: 2px;">AI</span>
             </h1>
-            <p>Start your advanced poultry research</p>
+            <p>Join the future of poultry analytics</p>
         </div>
 
         {% if error %}
@@ -107,7 +158,7 @@
 
         <form method="POST" autocomplete="off">
             <div class="input-group">
-                <label>Institutional Username</label>
+                <label>Username</label>
                 <input type="text" name="username" class="input-field" placeholder="Choose username" required autocomplete="off">
             </div>
             <div class="input-group">
@@ -115,10 +166,16 @@
                 <input type="email" name="email" class="input-field" placeholder="username@gmail.com" required autocomplete="off">
             </div>
             <div class="input-group">
-                <label>Access Credential</label>
-                <input type="password" name="password" class="input-field" placeholder="Minimum 8 characters" required minlength="8" autocomplete="new-password">
+                <label>Password</label>
+                <div class="password-wrapper">
+                    <input type="password" name="password" id="password" class="input-field" placeholder="Minimum 8 characters" required minlength="8" autocomplete="new-password">
+                    <i class="fas fa-eye password-toggle" onclick="togglePassword('password')"></i>
+                </div>
             </div>
-            <button type="submit" class="btn">Register Account</button>
+            <button type="submit" class="btn" id="submitBtn">
+                <span class="btn-text">Create Account</span>
+                <div class="spinner"></div>
+            </button>
         </form>
 
 
@@ -126,6 +183,71 @@
             Already have an account? <a href="{{ url_for('login') }}">Sign In</a>
         </div>
     </div>
+    <script>
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = input.nextElementSibling;
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        function createParticles(x, y) {
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                document.body.appendChild(particle);
+                
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = 50 + Math.random() * 100;
+                const tx = Math.cos(angle) * velocity;
+                const ty = Math.sin(angle) * velocity;
+                
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+                particle.style.setProperty('--tx', `${tx}px`);
+                particle.style.setProperty('--ty', `${ty}px`);
+                
+                setTimeout(() => particle.remove(), 1000);
+            }
+        }
+
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const btnText = document.querySelector('.btn-text');
+            const spinner = document.querySelector('.spinner');
+            
+            // Validation check to ensure native validation still works
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+            
+            btnText.style.display = 'none';
+            spinner.style.display = 'inline-block';
+            btn.style.pointerEvents = 'none';
+            
+            setTimeout(() => {
+                const rect = btn.getBoundingClientRect();
+                createParticles(rect.left + rect.width / 2, rect.top + rect.height / 2);
+                
+                btnText.innerText = "Success!";
+                btnText.style.display = 'inline-block';
+                spinner.style.display = 'none';
+                btn.style.background = '#059669'; 
+                
+                setTimeout(() => form.submit(), 800);
+            }, 1000);
+        });
+    </script>
 </body>
 </html>
 
