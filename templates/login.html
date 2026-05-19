@@ -43,7 +43,7 @@
             backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
             border-radius: 24px;
-            padding: 2.5rem;
+            padding: 1.8rem 2rem;
             width: 100%;
             max-width: 420px;
             box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.8);
@@ -56,33 +56,33 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .logo-area { text-align: center; margin-bottom: 1.5rem; }
-        .logo-area i { font-size: 2.2rem; color: var(--primary); margin-bottom: 0.8rem; }
-        .logo-area h1 { font-size: 2rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 0.3rem; }
+        .logo-area { text-align: center; margin-bottom: 1rem; }
+        .logo-area i { font-size: 1.8rem; color: var(--primary); margin-bottom: 0.5rem; }
+        .logo-area h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 0.2rem; }
         .logo-area p { color: var(--text-muted); font-size: 0.9rem; }
 
 
-        .input-group { margin-bottom: 1.5rem; }
+        .input-group { margin-bottom: 1rem; }
         .input-group label {
             display: block; font-size: 0.8rem; font-weight: 700; color: var(--primary);
-            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.6rem;
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.4rem;
         }
         .input-field {
             width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
-            color: white; padding: 1rem 1.2rem; border-radius: 12px; font-size: 1rem;
+            color: white; padding: 0.8rem 1rem; border-radius: 12px; font-size: 1rem;
             transition: all 0.3s ease;
         }
         .input-field:focus { outline: none; border-color: var(--primary); background: rgba(0,0,0,0.5); }
 
         .btn {
-            background: var(--primary); color: #000; font-weight: 800; padding: 1.1rem;
+            background: var(--primary); color: #000; font-weight: 800; padding: 0.9rem;
             border: none; border-radius: 12px; cursor: pointer; width: 100%;
             font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;
-            transition: all 0.3s ease; margin-top: 1rem;
+            transition: all 0.3s ease; margin-top: 0.5rem;
         }
         .btn:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 15px 30px -10px rgba(251, 191, 36, 0.4); }
 
-        .footer-links { margin-top: 2rem; text-align: center; font-size: 0.9rem; color: var(--text-muted); }
+        .footer-links { margin-top: 1.5rem; text-align: center; font-size: 0.9rem; color: var(--text-muted); }
         .footer-links a { color: var(--primary); text-decoration: none; font-weight: 700; margin-left: 5px; }
 
         .error-toast {
@@ -107,8 +107,8 @@
 
         <form method="POST" autocomplete="off">
             <div class="input-group">
-                <label>Institutional Identifier</label>
-                <input type="text" name="username" class="input-field" placeholder="Username" required autocomplete="new-username">
+                <label>Username or Email Address</label>
+                <input type="text" name="username" class="input-field" placeholder="Enter username or email" required autocomplete="new-username">
             </div>
             <div class="input-group">
                 <label>Secure Access Key</label>

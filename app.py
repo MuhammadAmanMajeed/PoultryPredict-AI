@@ -71,8 +71,12 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp DATETIME, type TEXT, message TEXT, user_id INTEGER, is_read INTEGER DEFAULT 0
         )''')
         conn.execute('''CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, role TEXT DEFAULT 'farmer'
+            id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL, email TEXT UNIQUE, password_hash TEXT NOT NULL, role TEXT DEFAULT 'farmer'
         )''')
+        try:
+            conn.execute('ALTER TABLE users ADD COLUMN email TEXT UNIQUE')
+        except sqlite3.OperationalError:
+            pass
         conn.commit()
         conn.close()
     except Exception as e:
@@ -323,7 +327,8 @@ def login():
         password = request.form.get('password')
         try:
             db = get_db_connection()
-            user = db.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+            # Allow login via username or email
+            user = db.execute('SELECT * FROM users WHERE username = ? OR email = ?', (username, username)).fetchone()
             db.close()
             
             if user and check_password_hash(user['password_hash'], password):
@@ -332,21 +337,38 @@ def login():
             else:
                 return render_template('login.html', error='Invalid credentials. Account does not exist or password is wrong.')
         except Exception as e:
-            return render_template('login.html', error='Database Error')
-        return render_template('login.html', error='Invalid credentials')
+            return render_template('login.html', error=f'Database Error: {str(e)}')
     return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+        
+        if not username or not email or not password:
+            return render_template('register.html', error='All fields are required.')
+            
+        if len(password) < 8:
+            return render_template('register.html', error='Password must be at least 8 characters long.')
+            
         db = get_db_connection()
         try:
-            db.execute('INSERT INTO users (username, password_hash) VALUES (?, ?)', 
-                       (request.form.get('username'), generate_password_hash(request.form.get('password'))))
+            # Check if username or email already exists
+            existing_user = db.execute('SELECT * FROM users WHERE username = ? OR email = ?', (username, email)).fetchone()
+            if existing_user:
+                if existing_user['username'] == username:
+                    return render_template('register.html', error='Username already exists.')
+                else:
+                    return render_template('register.html', error='Email address already registered.')
+            
+            db.execute('INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)', 
+                       (username, email, generate_password_hash(password)))
             db.commit()
             return redirect(url_for('login'))
-        except sqlite3.IntegrityError:
-            return render_template('register.html', error='Username exists')
+        except Exception as e:
+            return render_template('register.html', error=f'Database Error: {str(e)}')
         finally:
             db.close()
     return render_template('register.html')
@@ -925,4 +947,4 @@ def retrain_model():
 
 if __name__ == '__main__':
     load_model()
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5050)
