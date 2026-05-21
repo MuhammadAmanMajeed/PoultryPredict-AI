@@ -431,12 +431,14 @@ def predict():
         # 3. AI Insights & Risk
         trend_data = []
         for a in [20, 30, 40, 50, 60, 70, 80]:
-            _, a_mod, _ = get_biological_modifiers(breed, a, season)
-            eff = min((0.7 + (raw_eff - 0.5) * 0.8) * b_mod * a_mod * s_mod, 0.91)
+            t_pred, t_eff, _, _ = calculate_final_prediction(
+                raw_eff, chickens, breed, a, season, temp, hum, float(data.get('Ammonia', 10)),
+                float(data.get('Light_Intensity', 50)), float(data.get('Light_Duration', 16))
+            )
             trend_data.append({
                 'age': a,
-                'eggs': round(eff * chickens, 0),
-                'efficiency': round(eff * 100, 1)
+                'eggs': round(t_pred, 0),
+                'efficiency': round(t_eff * 100, 1)
             })
 
         risk_label, risk_score, risk_color = FarmIntelligence.calculate_risk_level(temp, hum, float(data.get('Ammonia', 10)))
