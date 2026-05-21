@@ -107,7 +107,7 @@ def calculate_final_prediction(raw_efficiency, chickens, breed, age, season, tem
     b_mod, a_mod, s_mod = get_biological_modifiers(breed, age, season)
     
     # Base peak efficiencies for healthy flocks
-    breed_peaks = {'commercial': 0.90, 'misri': 0.75, 'desi': 0.60}
+    breed_peaks = {'commercial': 0.96, 'misri': 0.75, 'desi': 0.60}
     optimal_eff = breed_peaks.get(breed.lower(), 0.60) * a_mod * s_mod
     
     # Calculate environmental penalty from the ML model
@@ -130,7 +130,7 @@ def calculate_final_prediction(raw_efficiency, chickens, breed, age, season, tem
     
     # Hard floors to prevent unrealistic crashes for healthy birds
     floor_eff = {'commercial': 0.60, 'misri': 0.45, 'desi': 0.35}.get(breed.lower(), 0.35)
-    final_eff = min(max(final_eff, floor_eff), 0.96)
+    final_eff = min(max(final_eff, floor_eff), 0.97)
     
     return final_eff * chickens, final_eff, b_mod, s_mod
 
