@@ -3,7 +3,7 @@ Flask API for Egg Production Prediction System
 Muhammad Aman Majeed - 2022-ag-6211
 """
 
-from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_from_directory
+from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_from_directory, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
 import pandas as pd
@@ -335,9 +335,11 @@ def login():
                 session.update({'logged_in': True, 'user_id': user['id'], 'username': user['username']})
                 return redirect(url_for('home'))
             else:
-                return render_template('login.html', error='Invalid credentials. Account does not exist or password is wrong.')
+                flash('Invalid credentials. Account does not exist or password is wrong.', 'error')
+                return redirect(url_for('login'))
         except Exception as e:
-            return render_template('login.html', error=f'Database Error: {str(e)}')
+            flash(f'Database Error: {str(e)}', 'error')
+            return redirect(url_for('login'))
     return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -348,10 +350,12 @@ def register():
         password = request.form.get('password', '')
         
         if not username or not email or not password:
-            return render_template('register.html', error='All fields are required.')
+            flash('All fields are required.', 'error')
+            return redirect(url_for('register'))
             
         if len(password) < 8:
-            return render_template('register.html', error='Password must be at least 8 characters long.')
+            flash('Password must be at least 8 characters long.', 'error')
+            return redirect(url_for('register'))
             
         db = get_db_connection()
         try:
@@ -359,16 +363,19 @@ def register():
             existing_user = db.execute('SELECT * FROM users WHERE username = ? OR email = ?', (username, email)).fetchone()
             if existing_user:
                 if existing_user['username'] == username:
-                    return render_template('register.html', error='Username already exists.')
+                    flash('Username already exists.', 'error')
+                    return redirect(url_for('register'))
                 else:
-                    return render_template('register.html', error='Email address already registered.')
+                    flash('Email address already registered.', 'error')
+                    return redirect(url_for('register'))
             
             db.execute('INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)', 
                        (username, email, generate_password_hash(password)))
             db.commit()
             return redirect(url_for('login'))
         except Exception as e:
-            return render_template('register.html', error=f'Database Error: {str(e)}')
+            flash(f'Database Error: {str(e)}', 'error')
+            return redirect(url_for('register'))
         finally:
             db.close()
     return render_template('register.html')
@@ -426,7 +433,11 @@ def predict():
         for a in [20, 30, 40, 50, 60, 70, 80]:
             _, a_mod, _ = get_biological_modifiers(breed, a, season)
             eff = min((0.7 + (raw_eff - 0.5) * 0.8) * b_mod * a_mod * s_mod, 0.91)
-            trend_data.append({'age': a, 'eggs': round(eff * chickens, 0)})
+            trend_data.append({
+                'age': a,
+                'eggs': round(eff * chickens, 0),
+                'efficiency': round(eff * 100, 1)
+            })
 
         risk_label, risk_score, risk_color = FarmIntelligence.calculate_risk_level(temp, hum, float(data.get('Ammonia', 10)))
         ai_insights = FarmIntelligence.generate_ai_explanation(data, _, econ)

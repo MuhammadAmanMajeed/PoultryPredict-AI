@@ -702,7 +702,13 @@
                         </div>
                         
                         <div class="card">
-                            <div class="card-title">📉 Production & Efficiency Trends</div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                                <div class="card-title" style="margin-bottom: 0;">📉 Production & Efficiency Trends</div>
+                                <div class="badge-select" id="trend-view-select" style="margin-top: 0;">
+                                    <div class="badge-opt active" data-view="eggs">Eggs</div>
+                                    <div class="badge-opt" data-view="efficiency">Efficiency %</div>
+                                </div>
+                            </div>
                             <div style="height: 350px;"><canvas id="trendChart"></canvas></div>
                         </div>
 
@@ -859,6 +865,7 @@
     <script>
         let charts = {};
         let lastData = null;
+        let currentTrendView = 'eggs';
         document.getElementById('current-date').innerText = new Date().toLocaleDateString();
 
         function toggleTheme() {
@@ -905,6 +912,12 @@
                 opt.classList.add('active');
                 const targetInput = parent.id === 'breed-select' ? 'Breed' : null;
                 if (targetInput) document.getElementById(targetInput).value = opt.dataset.val;
+        });
+        
+        document.querySelectorAll('#trend-view-select .badge-opt').forEach(opt => {
+            opt.addEventListener('click', () => {
+                currentTrendView = opt.dataset.view;
+                if (lastData) renderCharts(lastData);
             });
         });
 
@@ -1034,13 +1047,17 @@
 
             // 1. Production Trend
             if (charts.trend) charts.trend.destroy();
+            const isEggsView = currentTrendView === 'eggs';
+            const chartData = data.trend_data.map(d => isEggsView ? d.eggs : d.efficiency);
+            const labelStr = isEggsView ? 'Projected Eggs' : 'Production Efficiency (%)';
+
             charts.trend = new Chart(document.getElementById('trendChart'), {
                 type: 'line',
                 data: {
                     labels: data.trend_data.map(d => `W${d.age}`),
                     datasets: [{
-                        label: 'Projected Eggs',
-                        data: data.trend_data.map(d => d.eggs),
+                        label: labelStr,
+                        data: chartData,
                         borderColor: '#fbbf24',
                         backgroundColor: 'rgba(251, 191, 36, 0.1)',
                         fill: true,
@@ -1052,9 +1069,28 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const index = context.dataIndex;
+                                    const item = data.trend_data[index];
+                                    return `Eggs: ${item.eggs.toLocaleString()} (${item.efficiency}% Efficiency)`;
+                                }
+                            }
+                        }
+                    },
                     scales: {
-                        y: { grid: { color: gridColor }, ticks: { color } },
+                        y: { 
+                            grid: { color: gridColor }, 
+                            ticks: { 
+                                color,
+                                callback: function(value) {
+                                    return isEggsView ? value.toLocaleString() : value + '%';
+                                }
+                            } 
+                        },
                         x: { grid: { display: false }, ticks: { color } }
                     }
                 }
@@ -1198,7 +1234,16 @@
                 const res = await fetch('/api/history');
                 const data = await res.json();
                 const tbody = document.getElementById('history-tbody');
-                tbody.innerHTML = data.history.map(r => `<tr><td style="padding:1rem;">${new Date(r.timestamp).toLocaleDateString()}</td><td>${r.chickens}</td><td>${r.breed}</td><td>${r.predicted_eggs}</td><td>${r.total_startup_cost.toLocaleString()} PKR</td></tr>`).join('');
+                tbody.innerHTML = data.history.map(r => {
+                    const effPct = r.chickens > 0 ? Math.round((r.predicted_eggs / r.chickens) * 100) : 0;
+                    return `<tr>
+                        <td style="padding: 1rem;">${new Date(r.timestamp).toLocaleDateString()}</td>
+                        <td>${r.chickens.toLocaleString()}</td>
+                        <td style="text-transform: capitalize;">${r.breed}</td>
+                        <td>${r.predicted_eggs.toLocaleString()} (${effPct}%)</td>
+                        <td>${r.total_startup_cost.toLocaleString()} PKR</td>
+                    </tr>`;
+                }).join('');
             } catch (e) {}
         }
 
