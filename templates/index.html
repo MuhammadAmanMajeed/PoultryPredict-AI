@@ -705,6 +705,7 @@
                                 <div class="badge-select" id="trend-view-select" style="margin-top: 0;">
                                     <div class="badge-opt active" data-view="eggs">Eggs</div>
                                     <div class="badge-opt" data-view="efficiency">Efficiency %</div>
+                                    <div class="badge-opt" data-view="feed">Feed (g)</div>
                                 </div>
                             </div>
                             <div style="height: 350px;"><canvas id="trendChart"></canvas></div>
@@ -1036,9 +1037,24 @@
 
             // 1. Production Trend
             if (charts.trend) charts.trend.destroy();
-            const isEggsView = currentTrendView === 'eggs';
-            const chartData = data.trend_data.map(d => isEggsView ? d.eggs : d.efficiency);
-            const labelStr = isEggsView ? 'Projected Eggs' : 'Production Efficiency (%)';
+            let chartData, labelStr, tooltipFormat, tickFormat;
+            
+            if (currentTrendView === 'eggs') {
+                chartData = data.trend_data.map(d => d.eggs);
+                labelStr = 'Projected Eggs';
+                tooltipFormat = (item) => `Eggs: ${item.eggs.toLocaleString()} (${item.efficiency}% Efficiency)`;
+                tickFormat = (val) => val.toLocaleString();
+            } else if (currentTrendView === 'efficiency') {
+                chartData = data.trend_data.map(d => d.efficiency);
+                labelStr = 'Production Efficiency (%)';
+                tooltipFormat = (item) => `Efficiency: ${item.efficiency}%`;
+                tickFormat = (val) => val + '%';
+            } else {
+                chartData = data.trend_data.map(d => d.feed || 0);
+                labelStr = 'Feed Intake (g/bird)';
+                tooltipFormat = (item) => `Feed: ${item.feed} g/bird`;
+                tickFormat = (val) => val + 'g';
+            }
 
             charts.trend = new Chart(document.getElementById('trendChart'), {
                 type: 'line',
@@ -1065,7 +1081,7 @@
                                 label: function(context) {
                                     const index = context.dataIndex;
                                     const item = data.trend_data[index];
-                                    return `Eggs: ${item.eggs.toLocaleString()} (${item.efficiency}% Efficiency)`;
+                                    return tooltipFormat(item);
                                 }
                             }
                         }
@@ -1076,7 +1092,7 @@
                             ticks: { 
                                 color,
                                 callback: function(value) {
-                                    return isEggsView ? value.toLocaleString() : value + '%';
+                                    return tickFormat(value);
                                 }
                             } 
                         },
