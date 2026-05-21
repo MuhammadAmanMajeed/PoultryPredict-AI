@@ -912,6 +912,7 @@
                 opt.classList.add('active');
                 const targetInput = parent.id === 'breed-select' ? 'Breed' : null;
                 if (targetInput) document.getElementById(targetInput).value = opt.dataset.val;
+            });
         });
         
         document.querySelectorAll('#trend-view-select .badge-opt').forEach(opt => {
