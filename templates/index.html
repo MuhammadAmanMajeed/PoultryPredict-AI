@@ -551,7 +551,6 @@
         <div class="nav-item" onclick="switchTab('monitoring')"><i class="fas fa-temperature-half"></i> Farm Monitoring
         </div>
         <div class="nav-item" onclick="switchTab('prediction')"><i class="fas fa-brain"></i> Prediction Center</div>
-        <div class="nav-item" onclick="switchTab('market')"><i class="fas fa-chart-line-up"></i> Market Trends</div>
         <div class="nav-item" onclick="switchTab('health')"><i class="fas fa-heartbeat"></i> Health & Meds</div>
         <div class="nav-item" onclick="switchTab('history')"><i class="fas fa-clock-rotate-left"></i> History Logs</div>
         <div class="nav-item" onclick="exportPDF()"><i class="fas fa-file-pdf"></i> PDF Report</div>
@@ -763,16 +762,7 @@
             </div>
         </div>
 
-        <div id="market-view" class="tab-view" style="display: none;">
-            <div class="card">
-                <div class="card-title">Egg Price Forecast (Prophet/AI Model)</div>
-                <div style="height: 400px;"><canvas id="marketChart"></canvas></div>
-            </div>
-            <div class="profit-card" style="background:rgba(59, 130, 246, 0.1); border-color:rgba(59, 130, 246, 0.2);">
-                <div class="lbl">Current Market Average</div>
-                <div class="val" id="market-current-val" style="color:#3b82f6;">0 PKR</div>
-            </div>
-        </div>
+
 
         <div id="validation-view" class="tab-view" style="display: none;">
             <div class="validation-grid" style="display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
@@ -896,7 +886,6 @@
 
             if (tab === 'dashboard') { document.getElementById('dashboard-view').style.display = 'block'; window.scrollTo({ top: 0, behavior: 'smooth' }); }
             else if (tab === 'monitoring') { document.getElementById('monitoring-view').style.display = 'block'; renderMonitoringCharts(); }
-            else if (tab === 'market') { document.getElementById('market-view').style.display = 'block'; renderMarketTrends(); }
             else if (tab === 'health') { document.getElementById('health-view').style.display = 'block'; updateVaccinations(); }
             else if (tab === 'prediction') { document.getElementById('dashboard-view').style.display = 'block'; document.getElementById('prediction-panel').scrollIntoView({ behavior: 'smooth', block: 'center' }); }
             else if (tab === 'history') { document.getElementById('history-view').style.display = 'block'; loadHistory(); }
@@ -1248,24 +1237,7 @@
             } catch (e) {}
         }
 
-        async function renderMarketTrends() {
-            try {
-                const res = await fetch('/api/market_trends');
-                const data = await res.json();
-                document.getElementById('market-current-val').innerText = data.current_price + ' PKR';
-                const isDark = document.body.getAttribute('data-theme') === 'dark';
-                const color = isDark ? '#94a3b8' : '#64748b';
-                if (charts.market) charts.market.destroy();
-                charts.market = new Chart(document.getElementById('marketChart'), {
-                    type: 'line',
-                    data: { labels: ['H1', 'H2', 'H3', 'C', 'F1', 'F2', 'F3'], datasets: [{ label: 'Price', data: [...data.history.slice(-3), data.current_price, ...data.forecast.slice(0, 3)], borderColor: '#fbbf24', tension: 0.4 }] },
-                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color } }, x: { ticks: { color } } } }
-                });
-            } catch (e) {
-                console.error("Error in renderMarketTrends:", e);
-                alert("Could not load market trends. Make sure the server is restarted and running.");
-            }
-        }
+
 
         async function renderMonitoringCharts() {
             try {

@@ -590,34 +590,6 @@ def get_alerts():
     db.close()
     return jsonify({'success': True, 'alerts': [dict(r) for r in rows]})
 
-@app.route('/api/market_trends', methods=['GET'])
-def get_market_trends():
-    if 'logged_in' not in session:
-        return jsonify({'error': 'Unauthorized'}), 401
-    try:
-        db = get_db_connection()
-        rows = db.execute(
-            'SELECT date, eggs, feed_kg FROM daily_logs WHERE user_id = ? ORDER BY date ASC LIMIT 30',
-            (session.get('user_id'),)
-        ).fetchall()
-        db.close()
-
-        if len(rows) >= 5:
-            historical_prices = [round(r['eggs'] * 0.030, 2) for r in rows]
-        else:
-            # Realistic Pakistani market egg prices (PKR, 2025-2026)
-            historical_prices = [28, 30, 29.5, 31, 32, 30.5, 33, 31.5, 32, 30]
-
-        forecast = FarmIntelligence.forecast_market_prices(historical_prices)
-        return jsonify({
-            'success': True,
-            'history': historical_prices,
-            'forecast': [round(f, 2) for f in forecast],
-            'current_price': historical_prices[-1],
-            'data_source': 'live' if len(rows) >= 5 else 'simulated'
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/export/csv')
 def export_csv():
