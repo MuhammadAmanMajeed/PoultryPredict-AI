@@ -572,7 +572,7 @@
         <div class="header">
             <div class="header-welcome">
                 <h1>Welcome, {{ username }}</h1>
-                <p>Intelligence Report • <span id="current-date"></span></p>
+                <p>Flock Performance • <span id="current-date"></span></p>
             </div>
             <div class="header-actions">
                 <i class="fas fa-sun action-icon" id="theme-toggle" onclick="toggleTheme()"></i>
@@ -632,10 +632,9 @@
                     </div>
                     <div class="form-group">
                         <label>Bird Type</label>
-                        <div class="badge-select" id="breed-select">
-                            <div class="badge-opt active" data-val="commercial">Commercial</div>
-                            <div class="badge-opt" data-val="misri">Misri</div>
-                            <div class="badge-opt" data-val="desi">Desi</div>
+                        <div class="badge-select" id="breed-select" style="flex-wrap: wrap; gap: 0.5rem;">
+                            <div class="badge-opt active" data-val="commercial">Commercial (White Leghorn)</div>
+                            <div class="badge-opt" data-val="desi">Indigenous Breed</div>
                         </div>
                         <input type="hidden" id="Breed" value="commercial">
                     </div>
