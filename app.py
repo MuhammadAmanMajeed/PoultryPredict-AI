@@ -435,10 +435,17 @@ def predict():
                 raw_eff, chickens, breed, a, season, temp, hum, float(data.get('Ammonia', 10)),
                 float(data.get('Light_Intensity', 50)), float(data.get('Light_Duration', 16))
             )
+            
+            if breed.lower() == 'commercial':
+                t_feed = 76 if a <= 20 else (100 if a <= 30 else 102)
+            else:
+                t_feed = 65 if a <= 20 else (85 if a <= 30 else 90)
+
             trend_data.append({
                 'age': a,
                 'eggs': round(t_pred, 0),
-                'efficiency': round(t_eff * 100, 1)
+                'efficiency': round(t_eff * 100, 1),
+                'feed': t_feed
             })
 
         risk_label, risk_score, risk_color = FarmIntelligence.calculate_risk_level(temp, hum, float(data.get('Ammonia', 10)))
