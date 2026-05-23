@@ -904,6 +904,13 @@
             document.querySelector('.sidebar-overlay').classList.toggle('active');
         }
 
+        function switchTab(tab) {
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            const targetNav = Array.from(document.querySelectorAll('.nav-item')).find(n => n.innerText.toLowerCase().includes(tab));
+            if (targetNav) targetNav.classList.add('active');
+            document.querySelectorAll('.tab-view').forEach(v => v.style.display = 'none');
+            if (window.innerWidth <= 1100) toggleSidebar();
+
             if (tab === 'dashboard') { document.getElementById('dashboard-view').style.display = 'block'; window.scrollTo({ top: 0, behavior: 'smooth' }); }
             else if (tab === 'monitoring') { document.getElementById('monitoring-view').style.display = 'block'; renderMonitoringCharts(); }
             else if (tab === 'health') { document.getElementById('health-view').style.display = 'block'; updateVaccinations(); }
