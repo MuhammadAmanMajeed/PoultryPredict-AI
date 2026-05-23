@@ -551,6 +551,7 @@
         <div class="nav-item" onclick="switchTab('monitoring')"><i class="fas fa-temperature-half"></i> Farm Monitoring
         </div>
         <div class="nav-item" onclick="switchTab('prediction')"><i class="fas fa-brain"></i> Prediction Center</div>
+        <div class="nav-item" onclick="switchTab('growth')"><i class="fas fa-chart-line"></i> Growth Standards</div>
         <div class="nav-item" onclick="switchTab('health')"><i class="fas fa-heartbeat"></i> Health & Meds</div>
         <div class="nav-item" onclick="switchTab('history')"><i class="fas fa-clock-rotate-left"></i> History Logs</div>
         <div class="nav-item" onclick="exportPDF()"><i class="fas fa-file-pdf"></i> PDF Report</div>
@@ -764,6 +765,32 @@
 
 
 
+        <div id="growth-view" class="tab-view" style="display: none;">
+            <div class="card">
+                <div class="card-title">📈 Standard Growth Curve (Body Weight vs. Age)</div>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    Target body weights for Hy-Line W-36 (Commercial) and Indigenous Breeds from Week 1 to Week 80.
+                </p>
+                <div style="height: 400px;"><canvas id="growthChart"></canvas></div>
+            </div>
+            
+            <div class="mini-grid" style="display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+                <div class="card">
+                    <div class="card-title">Target Metrics for Current Age</div>
+                    <div class="mini-grid" style="display: grid; gap: 1rem; grid-template-columns: 1fr 1fr;">
+                        <div class="mini-card" style="background: var(--bg-dark); padding: 1rem; border-radius: 12px; text-align: center;">
+                            <div class="val" id="target-weight-val" style="font-size: 1.2rem; font-weight: bold; color: var(--primary);">1.38 kg</div>
+                            <div class="lbl" style="font-size: 0.75rem; color: var(--text-muted);">Target Weight</div>
+                        </div>
+                        <div class="mini-card" style="background: var(--bg-dark); padding: 1rem; border-radius: 12px; text-align: center;">
+                            <div class="val" id="target-feed-val" style="font-size: 1.2rem; font-weight: bold; color: var(--primary);">100 g</div>
+                            <div class="lbl" style="font-size: 0.75rem; color: var(--text-muted);">Standard Feed/Day</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div id="validation-view" class="tab-view" style="display: none;">
             <div class="validation-grid" style="display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
                 <div class="card">
@@ -877,13 +904,6 @@
             document.querySelector('.sidebar-overlay').classList.toggle('active');
         }
 
-        function switchTab(tab) {
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            const targetNav = Array.from(document.querySelectorAll('.nav-item')).find(n => n.innerText.toLowerCase().includes(tab));
-            if (targetNav) targetNav.classList.add('active');
-            document.querySelectorAll('.tab-view').forEach(v => v.style.display = 'none');
-            if (window.innerWidth <= 1100) toggleSidebar();
-
             if (tab === 'dashboard') { document.getElementById('dashboard-view').style.display = 'block'; window.scrollTo({ top: 0, behavior: 'smooth' }); }
             else if (tab === 'monitoring') { document.getElementById('monitoring-view').style.display = 'block'; renderMonitoringCharts(); }
             else if (tab === 'health') { document.getElementById('health-view').style.display = 'block'; updateVaccinations(); }
@@ -891,6 +911,7 @@
             else if (tab === 'history') { document.getElementById('history-view').style.display = 'block'; loadHistory(); }
             else if (tab === 'settings') { document.getElementById('settings-view').style.display = 'block'; }
             else if (tab === 'validation') { document.getElementById('validation-view').style.display = 'block'; }
+            else if (tab === 'growth') { document.getElementById('growth-view').style.display = 'block'; renderGrowthChart(); }
         }
 
         // Badge Selection Logic
@@ -900,8 +921,19 @@
                 parent.querySelectorAll('.badge-opt').forEach(o => o.classList.remove('active'));
                 opt.classList.add('active');
                 const targetInput = parent.id === 'breed-select' ? 'Breed' : null;
-                if (targetInput) document.getElementById(targetInput).value = opt.dataset.val;
+                if (targetInput) {
+                    document.getElementById(targetInput).value = opt.dataset.val;
+                    if (document.getElementById('growth-view') && document.getElementById('growth-view').style.display !== 'none') {
+                        renderGrowthChart();
+                    }
+                }
             });
+        });
+
+        document.getElementById('Age').addEventListener('input', () => {
+            if (document.getElementById('growth-view') && document.getElementById('growth-view').style.display !== 'none') {
+                renderGrowthChart();
+            }
         });
         
         document.querySelectorAll('#trend-view-select .badge-opt').forEach(opt => {
@@ -1301,6 +1333,144 @@
             } catch (e) {
                 console.error("Error loading monitoring charts", e);
             }
+        }
+
+        function renderGrowthChart() {
+            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            const color = isDark ? '#94a3b8' : '#64748b';
+            const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+
+            const weeks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 25, 30, 40, 50, 60, 70, 80];
+            const commercialRaw = [65, 115, 180, 250, 330, 420, 510, 600, 690, 790, 880, 960, 1030, 1100, 1170, 1210, 1250, 1280, 1340, 1380, 1500, 1530, 1570, 1580, 1580, 1580, 1580];
+            const indigenousRaw = [40, 75, 110, 160, 215, 275, 340, 410, 480, 550, 620, 695, 770, 840, 900, 955, 1000, 1040, 1080, 1100, 1150, 1180, 1220, 1240, 1250, 1250, 1250];
+
+            const commercialData = weeks.map((w, idx) => ({ x: w, y: commercialRaw[idx] }));
+            const indigenousData = weeks.map((w, idx) => ({ x: w, y: indigenousRaw[idx] }));
+
+            // Get current flock info
+            const currentAge = parseInt(document.getElementById('Age').value) || 28;
+            const currentBreed = document.getElementById('Breed').value || 'commercial';
+            
+            // Calculate current flock's standard target weight based on age and breed
+            let currentTargetWeight = 0;
+            const targetWeights = currentBreed === 'commercial' ? commercialRaw : indigenousRaw;
+            
+            // Interpolate target weight
+            const exactIndex = weeks.indexOf(currentAge);
+            if (exactIndex !== -1) {
+                currentTargetWeight = targetWeights[exactIndex];
+            } else {
+                let i = 0;
+                while (i < weeks.length && weeks[i] < currentAge) {
+                    i++;
+                }
+                if (i === 0) {
+                    currentTargetWeight = targetWeights[0];
+                } else if (i === weeks.length) {
+                    currentTargetWeight = targetWeights[weeks.length - 1];
+                } else {
+                    const w0 = weeks[i-1];
+                    const w1 = weeks[i];
+                    const y0 = targetWeights[i-1];
+                    const y1 = targetWeights[i];
+                    currentTargetWeight = y0 + (currentAge - w0) * (y1 - y0) / (w1 - w0);
+                }
+            }
+            currentTargetWeight = Math.round(currentTargetWeight);
+
+            // Update info card text
+            document.getElementById('target-weight-val').innerText = (currentTargetWeight / 1000).toFixed(2) + ' kg (' + currentTargetWeight + ' g)';
+            document.getElementById('target-feed-val').innerText = currentBreed === 'commercial' ? '100 g/day' : '85 g/day';
+
+            if (charts.growth) charts.growth.destroy();
+            charts.growth = new Chart(document.getElementById('growthChart'), {
+                type: 'line',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Commercial (White Leghorn) Standard',
+                            data: commercialData,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                            tension: 0.3,
+                            borderWidth: 2.5,
+                            pointRadius: 3,
+                            fill: true
+                        },
+                        {
+                            label: 'Indigenous Breed Standard',
+                            data: indigenousData,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                            tension: 0.3,
+                            borderWidth: 2.5,
+                            pointRadius: 3,
+                            fill: true
+                        },
+                        {
+                            label: 'Your Current Flock Status',
+                            data: [{ x: currentAge, y: currentTargetWeight }],
+                            borderColor: '#fbbf24',
+                            backgroundColor: '#fbbf24',
+                            pointRadius: 8,
+                            pointHoverRadius: 10,
+                            showLine: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: { color }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw.y} grams at Week ${context.raw.x}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            grid: { color: gridColor },
+                            ticks: {
+                                color,
+                                callback: function(value) {
+                                    return value + ' g';
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Body Weight (Grams)',
+                                color
+                            }
+                        },
+                        x: {
+                            type: 'linear',
+                            bounds: 'ticks',
+                            min: 1,
+                            max: 80,
+                            grid: { color: gridColor },
+                            ticks: {
+                                color,
+                                stepSize: 5,
+                                callback: function(value) {
+                                    return 'W' + value;
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Age (Weeks)',
+                                color
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         async function runDiagnosis() {
