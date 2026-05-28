@@ -766,27 +766,44 @@
 
 
         <div id="growth-view" class="tab-view" style="display: none;">
+
+            <!-- Phase 1: Growing Period -->
             <div class="card">
-                <div class="card-title">📈 Standard Growth Curve (Body Weight vs. Age)</div>
-                <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem;">
-                    Target body weights for Hy-Line W-36 (Commercial) and Indigenous Breeds from Week 1 to Week 80.
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;">
+                    <div class="card-title" style="margin-bottom:0;">🐣 Phase 1: Growing Period — Week 1 to Week 17</div>
+                    <span style="background:rgba(59,130,246,0.15); color:#3b82f6; padding:4px 12px; border-radius:20px; font-size:0.7rem; font-weight:700;">PRE-LAY STAGE</span>
+                </div>
+                <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:1rem;">
+                    Brooding &amp; rearing phase — weekly body weight growth 🔵 aur daily feed intake 🟢 per bird.
                 </p>
-                <div style="height: 400px;"><canvas id="growthChart"></canvas></div>
+                <div style="height:380px;"><canvas id="growthChart1"></canvas></div>
             </div>
-            
-            <div class="mini-grid" style="display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
-                <div class="card">
-                    <div class="card-title">Target Metrics for Current Age</div>
-                    <div class="mini-grid" style="display: grid; gap: 1rem; grid-template-columns: 1fr 1fr;">
-                        <div class="mini-card" style="background: var(--bg-dark); padding: 1rem; border-radius: 12px; text-align: center;">
-                            <div class="val" id="target-weight-val" style="font-size: 1.2rem; font-weight: bold; color: var(--primary);">1.38 kg</div>
-                            <div class="lbl" style="font-size: 0.75rem; color: var(--text-muted);">Target Weight</div>
-                        </div>
-                        <div class="mini-card" style="background: var(--bg-dark); padding: 1rem; border-radius: 12px; text-align: center;">
-                            <div class="val" id="target-feed-val" style="font-size: 1.2rem; font-weight: bold; color: var(--primary);">100 g</div>
-                            <div class="lbl" style="font-size: 0.75rem; color: var(--text-muted);">Standard Feed/Day</div>
-                        </div>
-                    </div>
+
+            <!-- Phase 2: Laying Period -->
+            <div class="card" style="margin-top:1.5rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;">
+                    <div class="card-title" style="margin-bottom:0;">🥚 Phase 2: Laying Period — Week 18 to Week 80</div>
+                    <span style="background:rgba(16,185,129,0.15); color:#10b981; padding:4px 12px; border-radius:20px; font-size:0.7rem; font-weight:700;">EGG PRODUCTION STAGE</span>
+                </div>
+                <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:1rem;">
+                    Egg production phase — body weight stabilization 🔵 aur recommended daily feed 🟢 per bird.
+                </p>
+                <div style="height:380px;"><canvas id="growthChart2"></canvas></div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div style="display:grid; gap:1rem; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); margin-top:1.5rem;">
+                <div class="card" style="text-align:center;">
+                    <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:0.5rem;">⚖️ Target Weight (Current Age)</div>
+                    <div id="target-weight-val" style="font-size:1.4rem; font-weight:800; color:var(--primary);">—</div>
+                </div>
+                <div class="card" style="text-align:center;">
+                    <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:0.5rem;">🌾 Standard Feed / Day</div>
+                    <div id="target-feed-val" style="font-size:1.4rem; font-weight:800; color:#10b981;">—</div>
+                </div>
+                <div class="card" style="text-align:center;">
+                    <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:0.5rem;">📅 Current Phase</div>
+                    <div id="target-phase-val" style="font-size:1.1rem; font-weight:800; color:#fbbf24;">—</div>
                 </div>
             </div>
         </div>
@@ -1346,138 +1363,137 @@
             const isDark = document.body.getAttribute('data-theme') === 'dark';
             const color = isDark ? '#94a3b8' : '#64748b';
             const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
-
-            const weeks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 25, 30, 40, 50, 60, 70, 80];
-            const commercialRaw = [65, 115, 180, 250, 330, 420, 510, 600, 690, 790, 880, 960, 1030, 1100, 1170, 1210, 1250, 1280, 1340, 1380, 1500, 1530, 1570, 1580, 1580, 1580, 1580];
-            const indigenousRaw = [40, 75, 110, 160, 215, 275, 340, 410, 480, 550, 620, 695, 770, 840, 900, 955, 1000, 1040, 1080, 1100, 1150, 1180, 1220, 1240, 1250, 1250, 1250];
-
-            const commercialData = weeks.map((w, idx) => ({ x: w, y: commercialRaw[idx] }));
-            const indigenousData = weeks.map((w, idx) => ({ x: w, y: indigenousRaw[idx] }));
-
-            // Get current flock info
+            const currentBreed = (document.getElementById('Breed').value || 'commercial').toLowerCase();
             const currentAge = parseInt(document.getElementById('Age').value) || 28;
-            const currentBreed = document.getElementById('Breed').value || 'commercial';
-            
-            // Calculate current flock's standard target weight based on age and breed
-            let currentTargetWeight = 0;
-            const targetWeights = currentBreed === 'commercial' ? commercialRaw : indigenousRaw;
-            
-            // Interpolate target weight
-            const exactIndex = weeks.indexOf(currentAge);
-            if (exactIndex !== -1) {
-                currentTargetWeight = targetWeights[exactIndex];
-            } else {
-                let i = 0;
-                while (i < weeks.length && weeks[i] < currentAge) {
-                    i++;
-                }
-                if (i === 0) {
-                    currentTargetWeight = targetWeights[0];
-                } else if (i === weeks.length) {
-                    currentTargetWeight = targetWeights[weeks.length - 1];
-                } else {
-                    const w0 = weeks[i-1];
-                    const w1 = weeks[i];
-                    const y0 = targetWeights[i-1];
-                    const y1 = targetWeights[i];
-                    currentTargetWeight = y0 + (currentAge - w0) * (y1 - y0) / (w1 - w0);
+            const isCommercial = currentBreed === 'commercial';
+
+            // ── PHASE 1: Growing (Week 1-17) ───────────────────────────────
+            const growWeeks  = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17];
+            const comGrowWt  = [65,115,180,250,330,420,510,600,690,790,880,960,1030,1100,1170,1210,1250];
+            const comGrowFd  = [13,18,24,30,36,42,48,54,57,60,63,66,68,70,72,74,76];
+            const indGrowWt  = [40,75,110,160,215,275,340,410,480,550,620,695,770,840,900,955,1000];
+            const indGrowFd  = [10,15,20,25,30,34,38,42,46,49,52,55,57,59,61,63,65];
+
+            // ── PHASE 2: Laying (Week 18-80) ───────────────────────────────
+            const layWeeks   = [18,19,20,25,30,35,40,45,50,55,60,65,70,75,80];
+            const comLayWt   = [1280,1340,1380,1500,1530,1555,1570,1575,1580,1580,1580,1580,1580,1580,1580];
+            const comLayFd   = [88,95,100,105,108,109,110,109,108,107,105,103,102,101,100];
+            const indLayWt   = [1040,1080,1100,1150,1180,1200,1220,1230,1240,1245,1250,1250,1250,1250,1250];
+            const indLayFd   = [70,74,78,82,85,86,87,87,87,86,85,84,83,81,80];
+
+            const growWt = isCommercial ? comGrowWt : indGrowWt;
+            const growFd = isCommercial ? comGrowFd : indGrowFd;
+            const layWt  = isCommercial ? comLayWt  : indLayWt;
+            const layFd  = isCommercial ? comLayFd  : indLayFd;
+
+            // ── Interpolate current age targets ───────────────────────────
+            const allW = [...growWeeks, ...layWeeks];
+            const allWt = [...growWt, ...layWt];
+            const allFd = [...growFd, ...layFd];
+            let targetWt = allWt[allWt.length-1], targetFd = allFd[allFd.length-1];
+            for (let i = 0; i < allW.length - 1; i++) {
+                if (currentAge >= allW[i] && currentAge <= allW[i+1]) {
+                    const t = (currentAge - allW[i]) / (allW[i+1] - allW[i]);
+                    targetWt = Math.round(allWt[i] + t*(allWt[i+1]-allWt[i]));
+                    targetFd = Math.round(allFd[i] + t*(allFd[i+1]-allFd[i]));
+                    break;
                 }
             }
-            currentTargetWeight = Math.round(currentTargetWeight);
+            if (currentAge < allW[0]) { targetWt = allWt[0]; targetFd = allFd[0]; }
 
-            // Update info card text
-            document.getElementById('target-weight-val').innerText = (currentTargetWeight / 1000).toFixed(2) + ' kg (' + currentTargetWeight + ' g)';
-            document.getElementById('target-feed-val').innerText = currentBreed === 'commercial' ? '100 g/day' : '85 g/day';
+            document.getElementById('target-weight-val').innerText = (targetWt/1000).toFixed(2) + ' kg (' + targetWt + ' g)';
+            document.getElementById('target-feed-val').innerText = targetFd + ' g / day';
+            document.getElementById('target-phase-val').innerText = currentAge <= 17 ? '🐣 Growing (Pre-Lay)' : '🥚 Laying Phase';
 
-            if (charts.growth) charts.growth.destroy();
-            charts.growth = new Chart(document.getElementById('growthChart'), {
-                type: 'line',
-                data: {
-                    datasets: [
-                        {
-                            label: 'Commercial (White Leghorn) Standard',
-                            data: commercialData,
-                            borderColor: '#3b82f6',
-                            backgroundColor: 'rgba(59, 130, 246, 0.05)',
-                            tension: 0.3,
-                            borderWidth: 2.5,
-                            pointRadius: 3,
-                            fill: true
-                        },
-                        {
-                            label: 'Indigenous Breed Standard',
-                            data: indigenousData,
-                            borderColor: '#10b981',
-                            backgroundColor: 'rgba(16, 185, 129, 0.05)',
-                            tension: 0.3,
-                            borderWidth: 2.5,
-                            pointRadius: 3,
-                            fill: true
-                        },
-                        {
-                            label: 'Your Current Flock Status',
-                            data: [{ x: currentAge, y: currentTargetWeight }],
-                            borderColor: '#fbbf24',
-                            backgroundColor: '#fbbf24',
-                            pointRadius: 8,
-                            pointHoverRadius: 10,
-                            showLine: false
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: true,
-                            labels: { color }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return `${context.dataset.label}: ${context.raw.y} grams at Week ${context.raw.x}`;
-                                }
+            // ── Helper: build dual-axis chart ─────────────────────────────
+            function buildChart(key, canvasId, labels, wtData, fdData) {
+                if (charts[key]) charts[key].destroy();
+
+                // Mark current flock week on whichever series it falls in
+                const wtHighlight = labels.map((w,i) => w === currentAge ? wtData[i] : null);
+                const fdHighlight = labels.map((w,i) => w === currentAge ? fdData[i] : null);
+
+                charts[key] = new Chart(document.getElementById(canvasId), {
+                    type: 'line',
+                    data: {
+                        labels: labels.map(w => 'W' + w),
+                        datasets: [
+                            {
+                                label: 'Body Weight (g)',
+                                data: wtData,
+                                borderColor: '#3b82f6',
+                                backgroundColor: 'rgba(59,130,246,0.08)',
+                                borderWidth: 2.5, tension: 0.35,
+                                pointRadius: 4, pointHoverRadius: 7,
+                                fill: true, yAxisID: 'yWt'
+                            },
+                            {
+                                label: 'Daily Feed (g/bird)',
+                                data: fdData,
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16,185,129,0.07)',
+                                borderWidth: 2.5, tension: 0.35,
+                                borderDash: [6,3],
+                                pointRadius: 4, pointHoverRadius: 7,
+                                fill: true, yAxisID: 'yFd'
+                            },
+                            {
+                                label: 'Your Flock — Weight',
+                                data: wtHighlight,
+                                borderColor: '#fbbf24', backgroundColor: '#fbbf24',
+                                pointRadius: 9, pointHoverRadius: 11,
+                                showLine: false, yAxisID: 'yWt',
+                                pointStyle: 'star'
+                            },
+                            {
+                                label: 'Your Flock — Feed',
+                                data: fdHighlight,
+                                borderColor: '#f97316', backgroundColor: '#f97316',
+                                pointRadius: 9, pointHoverRadius: 11,
+                                showLine: false, yAxisID: 'yFd',
+                                pointStyle: 'star'
                             }
-                        }
+                        ]
                     },
-                    scales: {
-                        y: {
-                            grid: { color: gridColor },
-                            ticks: {
-                                color,
-                                callback: function(value) {
-                                    return value + ' g';
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: { display: true, labels: { color, font: { size: 11 } } },
+                            tooltip: {
+                                callbacks: {
+                                    label: ctx => {
+                                        if (ctx.raw === null) return null;
+                                        const unit = ctx.dataset.yAxisID === 'yWt' ? ' g (weight)' : ' g (feed)';
+                                        return ctx.dataset.label + ': ' + ctx.raw + unit;
+                                    }
                                 }
-                            },
-                            title: {
-                                display: true,
-                                text: 'Body Weight (Grams)',
-                                color
                             }
                         },
-                        x: {
-                            type: 'linear',
-                            bounds: 'ticks',
-                            min: 1,
-                            max: 80,
-                            grid: { color: gridColor },
-                            ticks: {
-                                color,
-                                stepSize: 5,
-                                callback: function(value) {
-                                    return 'W' + value;
-                                }
+                        scales: {
+                            yWt: {
+                                type:'linear', position:'left',
+                                grid: { color: gridColor },
+                                ticks: { color: '#3b82f6', callback: v => v+'g' },
+                                title: { display:true, text:'Body Weight (g)', color:'#3b82f6' }
                             },
-                            title: {
-                                display: true,
-                                text: 'Age (Weeks)',
-                                color
+                            yFd: {
+                                type:'linear', position:'right',
+                                grid: { drawOnChartArea: false },
+                                ticks: { color:'#10b981', callback: v => v+'g' },
+                                title: { display:true, text:'Feed (g/bird/day)', color:'#10b981' }
+                            },
+                            x: {
+                                grid: { color: gridColor },
+                                ticks: { color }
                             }
                         }
                     }
-                }
-            });
+                });
+            }
+
+            buildChart('growth1', 'growthChart1', growWeeks, growWt, growFd);
+            buildChart('growth2', 'growth2', layWeeks, layWt, layFd);
         }
 
         async function runDiagnosis() {
