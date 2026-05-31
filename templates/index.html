@@ -324,6 +324,11 @@
             transition: var(--transition);
         }
 
+        [data-theme="light"] .card {
+            box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.02);
+        }
+
         [data-theme="dark"] .card {
             box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.5);
             border: 1px solid rgba(255, 255, 255, 0.05);
@@ -507,6 +512,11 @@
             100% { transform: scale(1); opacity: 0.8; }
         }
 
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .ai-analyzing {
             animation: ai-pulse 2s infinite;
             color: var(--primary);
@@ -516,6 +526,102 @@
         #results-container {
             transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
+        .check-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            margin-bottom: 0.5rem;
+        }
+        
+        .check-container input {
+            accent-color: var(--primary);
+            width: 16px;
+            height: 16px;
+        }
+
+        table th, table td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        /* KPI Summary Bar */
+        .kpi-bar {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 900px) { .kpi-bar { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 500px) { .kpi-bar { grid-template-columns: 1fr 1fr; } }
+
+        .kpi-tile {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 1.2rem 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            animation: fadeInUp 0.4s ease forwards;
+            transition: var(--transition);
+        }
+
+        .kpi-tile:hover { transform: translateY(-4px); }
+
+        .kpi-icon {
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .kpi-info .kpi-val {
+            font-size: 1.35rem;
+            font-weight: 800;
+            font-family: 'Poppins', sans-serif;
+            letter-spacing: -0.5px;
+        }
+
+        .kpi-info .kpi-lbl {
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        /* Feed Optimizer */
+        .opt-result {
+            background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(251,191,36,0.08));
+            border: 1px solid rgba(16,185,129,0.2);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            animation: fadeInUp 0.4s ease;
+        }
+
+        .opt-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            font-size: 0.85rem;
+        }
+
+        .opt-row:last-child { border-bottom: none; }
+        .opt-row .opt-key { color: var(--text-muted); font-weight: 600; }
+        .opt-row .opt-val { font-weight: 800; color: var(--primary); }
     </style>
 </head>
 
@@ -543,959 +649,1230 @@
         <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
         <div class="sidebar" id="sidebar">
-        <div class="brand">
-            <i class="fas fa-feather-pointed"></i> FlockSense 
-            <span style="background: var(--primary); color: #000; padding: 2px 6px; border-radius: 6px; font-size: 0.75rem; margin-left: 5px; line-height: 1;">AI</span>
-        </div>
-        <div class="nav-item active" onclick="switchTab('dashboard')"><i class="fas fa-grid-2"></i> Dashboard</div>
-        <div class="nav-item" onclick="switchTab('monitoring')"><i class="fas fa-temperature-half"></i> Farm Monitoring
-        </div>
-        <div class="nav-item" onclick="switchTab('prediction')"><i class="fas fa-brain"></i> Prediction Center</div>
-        <div class="nav-item" onclick="switchTab('growth')"><i class="fas fa-chart-line"></i> Growth Standards</div>
-        <div class="nav-item" onclick="switchTab('health')"><i class="fas fa-heartbeat"></i> Health & Meds</div>
-        <div class="nav-item" onclick="switchTab('history')"><i class="fas fa-clock-rotate-left"></i> History Logs</div>
-        <div class="nav-item" onclick="exportPDF()"><i class="fas fa-file-pdf"></i> PDF Report</div>
-        <a href="/api/export/csv" class="nav-item"><i class="fas fa-file-csv"></i> CSV Export</a>
-        <div class="nav-item" onclick="switchTab('settings')"><i class="fas fa-cog"></i> Settings</div>
-        <a href="/logout" class="nav-item" style="color: var(--danger); margin-top: 2rem;"><i
-                class="fas fa-right-from-bracket"></i> Logout</a>
-        <div class="status-pill">
-            <div class="status-dot"></div> Status: Operational
-        </div>
-        <div
-            style="margin-top: 1.5rem; text-align: center; font-size: 0.7rem; color: var(--text-muted); line-height: 1.4;">
-            Developed by<br>
-            <strong style="color: var(--primary); font-size: 0.75rem;">Muhammad Aman Majeed</strong>
-        </div>
-    </div>
-
-    <div class="main-stage">
-        <div class="header">
-            <div class="header-welcome">
-                <h1>Welcome, {{ username }}</h1>
-                <p>Flock Performance • <span id="current-date"></span></p>
+            <div class="brand">
+                <i class="fas fa-feather-pointed"></i> FlockSense 
+                <span style="background: var(--primary); color: #000; padding: 2px 6px; border-radius: 6px; font-size: 0.75rem; margin-left: 5px; line-height: 1;">AI</span>
             </div>
-            <div class="header-actions">
-                <i class="fas fa-sun action-icon" id="theme-toggle" onclick="toggleTheme()"></i>
-                <div style="position: relative;">
-                    <i class="fas fa-bell action-icon" onclick="toggleAlerts()"></i>
-                    <span id="alert-badge"
-                        style="display:none; position:absolute; top:-5px; right:-5px; background:var(--danger); color:white; border-radius:50%; width:18px; height:18px; font-size:10px; display:flex; align-items:center; justify-content:center;">0</span>
-                    <div id="alerts-dropdown"
-                        style="display:none; position:absolute; top:40px; right:-60px; background:var(--bg-card); width:280px; max-width:90vw; border-radius:15px; box-shadow:0 10px 30px rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.1); z-index:1002; padding:1rem;">
-                        <div style="font-weight:800; font-size:0.8rem; margin-bottom:1rem; color:var(--primary);">ACTIVE
-                            ALERTS</div>
-                        <div id="alerts-list" style="max-height:300px; overflow-y:auto;"></div>
+            <div class="nav-item active" onclick="switchTab('dashboard')"><i class="fas fa-grid-2"></i> Dashboard</div>
+            <div class="nav-item" onclick="switchTab('monitoring')"><i class="fas fa-temperature-half"></i> Farm Monitoring</div>
+            <div class="nav-item" onclick="switchTab('growth')"><i class="fas fa-chart-line"></i> Growth Standards</div>
+            <div class="nav-item" onclick="switchTab('health')"><i class="fas fa-heartbeat"></i> Health & Meds</div>
+            <div class="nav-item" onclick="switchTab('optimizer')"><i class="fas fa-sliders"></i> Feed Optimizer</div>
+            <div class="nav-item" onclick="switchTab('history')"><i class="fas fa-clock-rotate-left"></i> History Logs</div>
+            <div class="nav-item" onclick="exportPDF()"><i class="fas fa-file-pdf"></i> PDF Report</div>
+            <a href="/api/export/csv" class="nav-item"><i class="fas fa-file-csv"></i> CSV Export</a>
+            <div class="nav-item" onclick="switchTab('settings')"><i class="fas fa-cog"></i> Settings</div>
+            <a href="/logout" class="nav-item" style="color: var(--danger); margin-top: 2rem;"><i class="fas fa-right-from-bracket"></i> Logout</a>
+            
+            <div class="status-pill">
+                <div class="status-dot"></div> Status: Operational
+            </div>
+            <div style="margin-top: 1.5rem; text-align: center; font-size: 0.7rem; color: var(--text-muted); line-height: 1.4;">
+                Developed by<br>
+                <strong style="color: var(--primary); font-size: 0.75rem;">Muhammad Aman Majeed</strong>
+            </div>
+        </div>
+
+        <div class="main-stage">
+            <div class="header">
+                <div class="header-welcome">
+                    <h1>Welcome, <span id="welcome-username">Farmer</span></h1>
+                    <p>Flock Performance • <span id="current-date"></span></p>
+                </div>
+                <div class="header-actions">
+                    <i class="fas fa-sun action-icon" id="theme-toggle" onclick="toggleTheme()"></i>
+                    <div style="position: relative;">
+                        <i class="fas fa-bell action-icon" onclick="toggleAlerts()"></i>
+                        <span id="alert-badge"
+                            style="display:none; position:absolute; top:-5px; right:-5px; background:var(--danger); color:white; border-radius:50%; width:18px; height:18px; font-size:10px; display:flex; align-items:center; justify-content:center;">0</span>
+                        <div id="alerts-dropdown"
+                            style="display:none; position:absolute; top:40px; right:-60px; background:var(--bg-card); width:280px; max-width:90vw; border-radius:15px; box-shadow:0 10px 30px rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.1); z-index:1002; padding:1rem;">
+                            <div style="font-weight:800; font-size:0.8rem; margin-bottom:1rem; color:var(--primary);">ACTIVE ALERTS</div>
+                            <div id="alerts-list" style="max-height:300px; overflow-y:auto;"></div>
+                        </div>
+                    </div>
+                    <img id="header-avatar" src="https://ui-avatars.com/api/?name=Farmer&background=fbbf24&color=000" class="profile-img">
+                </div>
+            </div>
+
+            <!-- TAB: DASHBOARD -->
+            <div id="dashboard-view" class="tab-view">
+
+                <!-- KPI SUMMARY BAR -->
+                <div class="kpi-bar">
+                    <div class="kpi-tile">
+                        <div class="kpi-icon" style="background: rgba(251,191,36,0.15);">🐔</div>
+                        <div class="kpi-info">
+                            <div class="kpi-val" id="kpi-birds">—</div>
+                            <div class="kpi-lbl">Total Birds</div>
+                        </div>
+                    </div>
+                    <div class="kpi-tile">
+                        <div class="kpi-icon" style="background: rgba(16,185,129,0.15);">🥚</div>
+                        <div class="kpi-info">
+                            <div class="kpi-val" id="kpi-eggs">—</div>
+                            <div class="kpi-lbl">Eggs Today</div>
+                        </div>
+                    </div>
+                    <div class="kpi-tile">
+                        <div class="kpi-icon" style="background: rgba(59,130,246,0.15);">🌾</div>
+                        <div class="kpi-info">
+                            <div class="kpi-val" id="kpi-feed">—</div>
+                            <div class="kpi-lbl">Feed (kg/day)</div>
+                        </div>
+                    </div>
+                    <div class="kpi-tile" style="display: none;">
+                        <div class="kpi-icon" style="background: rgba(239,68,68,0.15);">💀</div>
+                        <div class="kpi-info">
+                            <div class="kpi-val" id="kpi-mortality">—</div>
+                            <div class="kpi-lbl">Mortality</div>
+                        </div>
                     </div>
                 </div>
-                <img src="https://ui-avatars.com/api/?name={{ username }}&background=fbbf24&color=000"
-                    class="profile-img">
-            </div>
-        </div>
 
-        <div id="dashboard-view" class="tab-view">
-            <!-- 3 Section Layout Start -->
-            <div class="dashboard-grid">
-                
-                <!-- SECTION 1: 📊 Farm Inputs (Left) -->
-                <div class="card" id="prediction-panel">
-                    <div class="card-title">📊 Farm Inputs</div>
-                    <div class="form-group">
-                        <label>Flock Size <span id="ind-flock" class="param-indicator"></span></label>
-                        <input type="number" id="Amount_of_chicken" class="form-input" value="5000">
-                    </div>
-                    <div class="form-group">
-                        <label>Feed per Bird (g) <span id="ind-feed" class="param-indicator"></span></label>
-                        <input type="number" id="Feed_per_Chicken_g" class="form-input" value="100">
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
-                        <div class="form-group"><label>Temp °C <span id="ind-temp" class="param-indicator"></span></label>
-                            <input type="number" id="Temperature" class="form-input" value="23" oninput="updateIndicators()">
-                            <div id="msg-Temperature" class="input-msg"></div>
-                        </div>
-                        <div class="form-group"><label>Hum % <span id="ind-hum" class="param-indicator"></span></label>
-                            <input type="number" id="Humidity" class="form-input" value="60" oninput="updateIndicators()">
-                            <div id="msg-Humidity" class="input-msg"></div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Ammonia (ppm) <span id="ind-amm" class="param-indicator"></span></label>
-                        <input type="number" id="Ammonia" class="form-input" value="15" oninput="updateIndicators()">
-                        <div id="msg-Ammonia" class="input-msg"></div>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
-                        <div class="form-group"><label>Light (Lux)</label><input type="number" id="Light_Intensity" class="form-input" value="50"></div>
-                        <div class="form-group"><label>Light (Hrs)</label><input type="number" id="Light_Duration" class="form-input" value="16"></div>
-                    </div>
-                    <div class="form-group">
-                        <label>Noise (dB)</label>
-                        <input type="number" id="Noise" class="form-input" value="45">
-                    </div>
-                    <div class="form-group">
-                        <label>Bird Type</label>
-                        <div class="badge-select" id="breed-select" style="flex-wrap: wrap; gap: 0.5rem;">
-                            <div class="badge-opt active" data-val="commercial">Commercial (White Leghorn)</div>
-                            <div class="badge-opt" data-val="desi">Indigenous Breed</div>
-                        </div>
-                        <input type="hidden" id="Breed" value="commercial">
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
-                        <div class="form-group"><label>Age (W)</label><input type="number" id="Age" class="form-input" value="28"></div>
+                <div class="dashboard-grid">
+                    
+                    <!-- SECTION 1: Farm Inputs -->
+                    <div class="card" id="prediction-panel">
+                        <div class="card-title">📊 Farm Inputs</div>
                         <div class="form-group">
-                            <label>System</label>
-                            <select id="System_Type" class="form-input">
-                                <option value="automatic">Automatic</option>
-                                <option value="manual">Manual</option>
+                            <label>Flock Size <span id="ind-flock" class="param-indicator"></span></label>
+                            <input type="number" id="Amount_of_chicken" class="form-input" value="5000">
+                        </div>
+                        <div class="form-group">
+                            <label>Feed per Bird (g) <span id="ind-feed" class="param-indicator"></span></label>
+                            <input type="number" id="Feed_per_Chicken_g" class="form-input" value="100">
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+                            <div class="form-group"><label>Temp °C <span id="ind-temp" class="param-indicator"></span></label>
+                                <input type="number" id="Temperature" class="form-input" value="23" oninput="updateIndicators()">
+                                <div id="msg-Temperature" class="input-msg"></div>
+                            </div>
+                            <div class="form-group"><label>Hum % <span id="ind-hum" class="param-indicator"></span></label>
+                                <input type="number" id="Humidity" class="form-input" value="60" oninput="updateIndicators()">
+                                <div id="msg-Humidity" class="input-msg"></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Ammonia (ppm) <span id="ind-amm" class="param-indicator"></span></label>
+                            <input type="number" id="Ammonia" class="form-input" value="15" oninput="updateIndicators()">
+                            <div id="msg-Ammonia" class="input-msg"></div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+                            <div class="form-group"><label>Light (Lux)</label><input type="number" id="Light_Intensity" class="form-input" value="50"></div>
+                            <div class="form-group"><label>Light (Hrs)</label><input type="number" id="Light_Duration" class="form-input" value="16"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Noise (dB)</label>
+                            <input type="number" id="Noise" class="form-input" value="45">
+                        </div>
+                        <div class="form-group">
+                            <label>Bird Type</label>
+                            <div class="badge-select" id="breed-select" style="flex-wrap: wrap; gap: 0.5rem;">
+                                <div class="badge-opt active" data-val="commercial">Commercial (Leghorn)</div>
+                                <div class="badge-opt" data-val="desi">Indigenous Breed</div>
+                            </div>
+                            <input type="hidden" id="Breed" value="commercial">
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+                            <div class="form-group"><label>Age (Weeks)</label><input type="number" id="Age" class="form-input" value="28" oninput="renderGrowthChart()"></div>
+                            <div class="form-group">
+                                <label>System</label>
+                                <select id="System_Type" class="form-input">
+                                    <option value="automatic">Automatic</option>
+                                    <option value="manual">Manual</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Season</label>
+                            <select id="Season" class="form-input">
+                                <option value="spring">Spring</option>
+                                <option value="summer">Summer</option>
+                                <option value="winter">Winter</option>
+                                <option value="autumn">Autumn</option>
                             </select>
                         </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Season</label>
-                        <select id="Season" class="form-input">
-                            <option value="spring">Spring</option>
-                            <option value="summer">Summer</option>
-                            <option value="winter">Winter</option>
-                            <option value="autumn">Autumn</option>
-                        </select>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
-                        <div class="form-group"><label>Feed PKR/kg</label><input type="number" id="Feed_Price" class="form-input" value="260"></div>
-                        <div class="form-group"><label>Egg PKR/ea</label><input type="number" id="Egg_Price" class="form-input" value="30"></div>
-                    </div>
-                    
-                    <div style="text-align: center; margin-top: 1rem;">
-                        <button class="btn-predict" id="main-run-btn" onclick="runPrediction()">🟡 RUN AI ANALYSIS</button>
-                        <p id="ai-status" class="ai-analyzing" style="display:none; font-size: 0.7rem; margin-top: 10px;">AI is analyzing farm conditions...</p>
-                    </div>
-                </div>
-
-                <!-- SECTION 2: 📈 AI Results (Center) -->
-                <div id="results-panel">
-                    <div class="highlight-cards">
-                        <div class="big-card">
-                            <div class="lbl">🥚 Daily Eggs</div>
-                            <div class="val" id="res-eggs">0</div>
-                            <div style="font-size: 0.7rem; font-weight: 700; color: var(--success);" id="res-efficiency">0% Efficiency</div>
-                        </div>
-                        <div class="big-card profit">
-                            <div class="lbl">💰 Monthly Profit</div>
-                            <div class="val" id="res-profit" style="color: var(--success);">0</div>
-                            <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);">PKR / Month</div>
-                        </div>
-                        <div class="big-card risk">
-                            <div class="lbl">⚠️ Risk Level</div>
-                            <div class="val" id="res-risk" style="color: var(--success);">Low</div>
-                            <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);" id="res-risk-score">Safety: 100%</div>
-                        </div>
-                    </div>
-
-                    <div id="results-container" style="opacity: 0.1;">
-                        <div class="card">
-                            <div class="card-title">🤖 AI INSIGHTS & EXPLANATION</div>
-                            <div id="insights-container" class="ai-insight-box">
-                                <div class="insight-item">
-                                    <i class="fas fa-circle-info"></i>
-                                    <span>Run analysis to see AI driven farm insights.</span>
-                                </div>
-                            </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+                            <div class="form-group"><label>Feed PKR/kg</label><input type="number" id="Feed_Price" class="form-input" value="260"></div>
+                            <div class="form-group"><label>Egg PKR/ea</label><input type="number" id="Egg_Price" class="form-input" value="30"></div>
                         </div>
                         
-                        <div class="card">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.5rem;">
-                                <div class="card-title" style="margin-bottom: 0;">📉 Production & Efficiency Trends</div>
-                                <div class="badge-select" id="trend-view-select" style="margin-top: 0;">
-                                    <div class="badge-opt active" data-view="eggs">Eggs</div>
-                                    <div class="badge-opt" data-view="efficiency">Efficiency %</div>
-                                    <div class="badge-opt" data-view="feed">Feed (g)</div>
+                        <div style="text-align: center; margin-top: 1rem;">
+                            <button class="btn-predict" id="main-run-btn" onclick="runPrediction()">🟡 RUN AI ANALYSIS</button>
+                            <p id="ai-status" class="ai-analyzing" style="display:none; font-size: 0.7rem; margin-top: 10px;">AI is analyzing farm conditions...</p>
+                        </div>
+                    </div>
+
+                    <!-- SECTION 2: AI Results -->
+                    <div id="results-panel">
+                        <div class="highlight-cards">
+                            <div class="big-card">
+                                <div class="lbl">🥚 Daily Eggs</div>
+                                <div class="val" id="res-eggs">0</div>
+                                <div style="font-size: 0.7rem; font-weight: 700; color: var(--success);" id="res-efficiency">0% Efficiency</div>
+                            </div>
+                            <div class="big-card profit">
+                                <div class="lbl">💰 Monthly Profit</div>
+                                <div class="val" id="res-profit" style="color: var(--success);">0</div>
+                                <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);">PKR / Month</div>
+                            </div>
+                            <div class="big-card risk">
+                                <div class="lbl">⚠️ Risk Level</div>
+                                <div class="val" id="res-risk" style="color: var(--success);">Low</div>
+                                <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);" id="res-risk-score">Safety: 100%</div>
+                            </div>
+                        </div>
+
+                        <div id="results-container" style="opacity: 0.15;">
+                            <div class="card">
+                                <div class="card-title">AI Insights &amp; Recommendation Engine</div>
+                                <div id="insights-container" class="ai-insight-box">
+                                    <div class="insight-item">
+                                        <i class="fas fa-circle-info"></i>
+                                        <span>Run analysis to see AI driven farm insights.</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div style="height: 350px;"><canvas id="trendChart"></canvas></div>
-                        </div>
+                            
+                            <div class="card">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                                    <div class="card-title" style="margin-bottom: 0;">📉 Production &amp; Efficiency Trends</div>
+                                    <div class="badge-select" id="trend-view-select" style="margin-top: 0;">
+                                        <div class="badge-opt active" data-view="eggs">Eggs</div>
+                                        <div class="badge-opt" data-view="efficiency">Efficiency %</div>
+                                        <div class="badge-opt" data-view="feed">Feed (g)</div>
+                                    </div>
+                                </div>
+                                <div style="height: 350px;"><canvas id="trendChart"></canvas></div>
+                            </div>
 
+                            <div class="card">
+                                <div class="card-title">🧠 AI Decision Breakdown — How AI Thinks</div>
+                                <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem;">Shows which input factors helped (green) or hurt (red) this prediction.</p>
+                                <div style="height: 320px;"><canvas id="shapChart"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECTION 3: Financials + Logging -->
+                    <div id="financial-panel">
                         <div class="card">
-                            <div class="card-title">🧠 AI Decision Breakdown — How AI Thinks</div>
-                            <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem;">Shows which input factors helped (green) or hurt (red) this prediction.</p>
-                            <div style="height: 320px;"><canvas id="shapChart"></canvas></div>
+                            <div class="card-title">💸 Cost Breakdown</div>
+                            <div style="height: 220px; margin-bottom: 1rem;"><canvas id="costChart"></canvas></div>
+                            <div class="mini-grid" style="display: grid; gap: 1rem; grid-template-columns: 1fr 1fr;">
+                                <div class="mini-card" style="background: var(--bg-dark); padding: 1rem; border-radius: 12px; text-align: center;"><div class="val" id="res-startup" style="font-size: 1.2rem; font-weight: bold; color: var(--primary);">0</div><div class="lbl" style="font-size: 0.75rem; color: var(--text-muted);">Startup (PKR)</div></div>
+                                <div class="mini-card" style="background: var(--bg-dark); padding: 1rem; border-radius: 12px; text-align: center;"><div class="val" id="res-feed" style="font-size: 1.2rem; font-weight: bold; color: var(--primary);">0</div><div class="lbl" style="font-size: 0.75rem; color: var(--text-muted);">Feed/Mo (PKR)</div></div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-title">⚖️ Feed vs Output</div>
+                            <div style="height: 220px;"><canvas id="feedOutputChart"></canvas></div>
+                        </div>
+                        
+                        <div class="card" id="logging-panel">
+                            <div class="card-title">📝 Quick Log</div>
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 0.8rem;">
+                                <div class="form-group" style="margin-bottom: 0;"><label style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Eggs today</label><input type="number" id="log-eggs" class="form-input" placeholder="Eggs today"></div>
+                                <div class="form-group" style="margin-bottom: 0;"><label style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Feed (kg)</label><input type="number" id="log-feed" class="form-input" placeholder="Feed (kg)"></div>
+                            </div>
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 0.8rem;">
+                                <div class="form-group" style="margin-bottom: 0;"><label style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 4px;">💧 Water (Liters)</label><input type="number" id="log-water" class="form-input" placeholder="e.g. 850" step="0.1"></div>
+                                <div class="form-group" style="margin-bottom: 0;"><label style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 4px;">🥚 Avg Egg Weight (g)</label><input type="number" id="log-egg-weight" class="form-input" placeholder="e.g. 60" step="0.1"></div>
+                            </div>
+                            <div style="display:grid; grid-template-columns: 1fr; gap: 0.8rem; margin-bottom: 0.8rem;">
+                                <div class="form-group" style="margin-bottom: 0;"><label style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Bird Weight (g)</label><input type="number" id="log-weight" class="form-input" placeholder="e.g. 1550 (optional)"></div>
+                                <input type="hidden" id="log-mortality" value="0">
+                            </div>
+                            <button class="btn-predict" style="background:var(--success); font-size: 0.75rem; padding: 0.6rem;" onclick="submitDailyLog()">SAVE LOG</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: MONITORING -->
+            <div id="monitoring-view" class="tab-view" style="display: none;">
+                <div class="card">
+                    <div class="card-title">Environmental Trends (Last 7 Days)</div>
+                    <div style="height: 400px;"><canvas id="envChart"></canvas></div>
+                </div>
+                <div class="mini-grid" style="display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+                    <div class="card" style="display: none;">
+                        <div class="card-title">Mortality Tracker</div>
+                        <div style="height: 250px;"><canvas id="mortalityChart"></canvas></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">FCR Analysis</div>
+                        <div style="height: 250px;"><canvas id="fcrChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: GROWTH -->
+            <div id="growth-view" class="tab-view" style="display: none;">
+                <div class="card" style="margin-bottom:1.5rem; background:linear-gradient(135deg, var(--bg-card) 0%, rgba(30,58,138,0.1) 100%); border: 1px solid rgba(59,130,246,0.15);">
+                    <div class="card-title" style="display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem;">
+                        <span>⚙️</span> Flock Growth Settings &amp; Metadata
+                    </div>
+                    <div style="display:grid; gap:1rem; grid-template-columns:repeat(auto-fit, minmax(180px,1fr));">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label style="font-size:0.7rem; color:var(--text-muted); display:block; margin-bottom:4px;">Farm Name</label>
+                            <input type="text" id="growth-farm-name" class="form-input" value="UVAS FAI45" oninput="renderGrowthChart()">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label style="font-size:0.7rem; color:var(--text-muted); display:block; margin-bottom:4px;">Hatch Date</label>
+                            <input type="date" id="growth-hatch-date" class="form-input" value="2018-05-15" oninput="renderGrowthChart()">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label style="font-size:0.7rem; color:var(--text-muted); display:block; margin-bottom:4px;">Housed Quantity</label>
+                            <input type="number" id="growth-housed" class="form-input" value="100000" oninput="renderGrowthChart()">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label style="font-size:0.7rem; color:var(--text-muted); display:block; margin-bottom:4px;">Strain</label>
+                            <input type="text" id="growth-strain" class="form-input" value="W-36" oninput="renderGrowthChart()">
                         </div>
                     </div>
                 </div>
 
-                <!-- SECTION 3: 📉 Financials + Charts (Right) -->
-                <div id="financial-panel">
+                <div class="badge-select" id="growth-phase-select" style="margin-bottom:1.5rem; justify-content:flex-start; width:fit-content; background:var(--bg-dark); padding: 4px; border-radius: 10px; display: flex; gap: 4px;">
+                    <div class="badge-opt active" id="btn-phase-grow" style="cursor:pointer; padding:6px 12px; border-radius:8px; font-size:0.75rem; font-weight:600;" onclick="switchGrowthPhase('growing')">🐣 Growing Period (Weeks 0-17)</div>
+                    <div class="badge-opt" id="btn-phase-lay" style="cursor:pointer; padding:6px 12px; border-radius:8px; font-size:0.75rem; font-weight:600;" onclick="switchGrowthPhase('laying')">🥚 Laying Period (Weeks 18-80)</div>
+                </div>
+
+                <!-- GROWING PHASE SECTION -->
+                <div id="growth-growing-section">
                     <div class="card">
-                        <div class="card-title">💸 Cost Breakdown</div>
-                        <div style="height: 220px; margin-bottom: 1rem;"><canvas id="costChart"></canvas></div>
-                        <div class="mini-grid" style="display: grid; gap: 1rem; grid-template-columns: 1fr 1fr;">
-                            <div class="mini-card" style="background: var(--bg-dark); padding: 1rem; border-radius: 12px; text-align: center;"><div class="val" id="res-startup" style="font-size: 1.2rem; font-weight: bold; color: var(--primary);">0</div><div class="lbl" style="font-size: 0.75rem; color: var(--text-muted);">Startup</div></div>
-                            <div class="mini-card" style="background: var(--bg-dark); padding: 1rem; border-radius: 12px; text-align: center;"><div class="val" id="res-feed" style="font-size: 1.2rem; font-weight: bold; color: var(--primary);">0</div><div class="lbl" style="font-size: 0.75rem; color: var(--text-muted);">Feed/Mo</div></div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:0.8rem; margin-bottom:1rem; flex-wrap:wrap; gap:1rem;">
+                            <div style="display:flex; align-items:center; gap:0.8rem;">
+                                <div style="background:#1e3a8a; border-radius:12px; padding:6px 12px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(0,0,0,0.3);">
+                                    <span style="font-size:1.3rem;">🐥</span>
+                                </div>
+                                <div>
+                                    <h3 style="font-size:1.05rem; font-weight:800; color:var(--primary); margin:0;">Standard Body Weight Target</h3>
+                                    <div style="font-size:0.7rem; color:var(--text-muted); font-weight:bold; margin-top:3px; display:flex; gap:0.6rem; flex-wrap:wrap;">
+                                        <span class="lbl-farm-val">UVAS FAI45</span>
+                                        <span class="lbl-hatch-val">Hatch: May 15, 2018</span>
+                                        <span class="lbl-housed-val">Housed: 100,000</span>
+                                        <span class="lbl-strain-val" style="background:rgba(251,191,36,0.15); color:#fbbf24; padding:1px 5px; border-radius:4px;">W-36</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <span style="background:rgba(236,72,153,0.15); color:#ec4899; padding:4px 12px; border-radius:20px; font-size:0.65rem; font-weight:700;">GROWING PHASE</span>
+                        </div>
+                        <div style="height:400px;"><canvas id="growthMortalityChart"></canvas></div>
+                    </div>
+
+                    <div class="card" style="margin-top:1.5rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:0.8rem; margin-bottom:1rem; flex-wrap:wrap; gap:1rem;">
+                            <div style="display:flex; align-items:center; gap:0.8rem;">
+                                <div style="background:#1e3a8a; border-radius:12px; padding:6px 12px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(0,0,0,0.3);">
+                                    <span style="font-size:1.3rem;">🐥</span>
+                                </div>
+                                <div>
+                                    <h3 style="font-size:1.05rem; font-weight:800; color:var(--primary); margin:0;">Weekly body weight gain</h3>
+                                    <div style="font-size:0.7rem; color:var(--text-muted); font-weight:bold; margin-top:3px; display:flex; gap:0.6rem; flex-wrap:wrap;">
+                                        <span class="lbl-farm-val">UVAS FAI45</span>
+                                        <span class="lbl-hatch-val">Hatch: May 15, 2018</span>
+                                        <span class="lbl-housed-val">Housed: 100,000</span>
+                                        <span class="lbl-strain-val" style="background:rgba(251,191,36,0.15); color:#fbbf24; padding:1px 5px; border-radius:4px;">W-36</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <span style="background:rgba(236,72,153,0.15); color:#ec4899; padding:4px 12px; border-radius:20px; font-size:0.65rem; font-weight:700;">WEIGHT GAIN</span>
+                        </div>
+                        <div style="height:380px;"><canvas id="growthGainChart"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- LAYING PHASE SECTION - Now with 4 W-36 Standard Charts -->
+                <div id="growth-laying-section" style="display:none;">
+
+                    <!-- Chart 1: Body Weight -->
+                    <div class="card" style="margin-bottom:1.5rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:0.8rem; margin-bottom:1rem; flex-wrap:wrap; gap:1rem;">
+                            <div style="display:flex; align-items:center; gap:0.8rem;">
+                                <div style="background:#065f46; border-radius:12px; padding:6px 12px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(0,0,0,0.3);"><span style="font-size:1.3rem;">⚖️</span></div>
+                                <div>
+                                    <h3 style="font-size:1.05rem; font-weight:800; color:#3b82f6; margin:0;">Body Weight (kg)</h3>
+                                    <div style="font-size:0.7rem; color:var(--text-muted); font-weight:bold; margin-top:3px; display:flex; gap:0.6rem; flex-wrap:wrap;">
+                                        <span class="lbl-farm-val">UVAS FAI45</span><span class="lbl-hatch-val">Hatch: May 15, 2018</span><span class="lbl-housed-val">Housed: 100,000</span><span class="lbl-strain-val" style="background:rgba(251,191,36,0.15); color:#fbbf24; padding:1px 5px; border-radius:4px;">W-36</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <span style="background:rgba(59,130,246,0.15); color:#3b82f6; padding:4px 12px; border-radius:20px; font-size:0.65rem; font-weight:700;">BODY WEIGHT</span>
+                        </div>
+                        <div style="height:380px;"><canvas id="stdBodyWeightChart"></canvas></div>
+                    </div>
+
+                    <!-- Chart 2: Egg Weight -->
+                    <div class="card" style="margin-bottom:1.5rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:0.8rem; margin-bottom:1rem; flex-wrap:wrap; gap:1rem;">
+                            <div style="display:flex; align-items:center; gap:0.8rem;">
+                                <div style="background:#065f46; border-radius:12px; padding:6px 12px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(0,0,0,0.3);"><span style="font-size:1.3rem;">🥚</span></div>
+                                <div>
+                                    <h3 style="font-size:1.05rem; font-weight:800; color:#10b981; margin:0;">Egg Weight (g)</h3>
+                                    <div style="font-size:0.7rem; color:var(--text-muted); font-weight:bold; margin-top:3px; display:flex; gap:0.6rem; flex-wrap:wrap;">
+                                        <span class="lbl-farm-val">UVAS FAI45</span><span class="lbl-hatch-val">Hatch: May 15, 2018</span><span class="lbl-housed-val">Housed: 100,000</span><span class="lbl-strain-val" style="background:rgba(251,191,36,0.15); color:#fbbf24; padding:1px 5px; border-radius:4px;">W-36</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <span style="background:rgba(16,185,129,0.15); color:#10b981; padding:4px 12px; border-radius:20px; font-size:0.65rem; font-weight:700;">EGG WEIGHT</span>
+                        </div>
+                        <div style="height:360px;"><canvas id="stdEggWeightChart"></canvas></div>
+                    </div>
+
+                    <!-- Chart 3: Water Consumption -->
+                    <div class="card" style="margin-bottom:1.5rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:0.8rem; margin-bottom:1rem; flex-wrap:wrap; gap:1rem;">
+                            <div style="display:flex; align-items:center; gap:0.8rem;">
+                                <div style="background:#1e3a8a; border-radius:12px; padding:6px 12px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(0,0,0,0.3);"><span style="font-size:1.3rem;">💧</span></div>
+                                <div>
+                                    <h3 style="font-size:1.05rem; font-weight:800; color:#38bdf8; margin:0;">Water Consumption (liters/day per bird)</h3>
+                                    <div style="font-size:0.7rem; color:var(--text-muted); font-weight:bold; margin-top:3px; display:flex; gap:0.6rem; flex-wrap:wrap;">
+                                        <span class="lbl-farm-val">UVAS FAI45</span><span class="lbl-hatch-val">Hatch: May 15, 2018</span><span class="lbl-housed-val">Housed: 100,000</span><span class="lbl-strain-val" style="background:rgba(251,191,36,0.15); color:#fbbf24; padding:1px 5px; border-radius:4px;">W-36</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <span style="background:rgba(56,189,248,0.15); color:#38bdf8; padding:4px 12px; border-radius:20px; font-size:0.65rem; font-weight:700;">WATER</span>
+                        </div>
+                        <div style="height:360px;"><canvas id="stdWaterChart"></canvas></div>
+                    </div>
+
+                    <!-- Chart 4: Feed Consumption -->
+                    <div class="card">
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:0.8rem; margin-bottom:1rem; flex-wrap:wrap; gap:1rem;">
+                            <div style="display:flex; align-items:center; gap:0.8rem;">
+                                <div style="background:#78350f; border-radius:12px; padding:6px 12px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(0,0,0,0.3);"><span style="font-size:1.3rem;">🌾</span></div>
+                                <div>
+                                    <h3 style="font-size:1.05rem; font-weight:800; color:#fb923c; margin:0;">Feed Consumption (g/day per bird)</h3>
+                                    <div style="font-size:0.7rem; color:var(--text-muted); font-weight:bold; margin-top:3px; display:flex; gap:0.6rem; flex-wrap:wrap;">
+                                        <span class="lbl-farm-val">UVAS FAI45</span><span class="lbl-hatch-val">Hatch: May 15, 2018</span><span class="lbl-housed-val">Housed: 100,000</span><span class="lbl-strain-val" style="background:rgba(251,191,36,0.15); color:#fbbf24; padding:1px 5px; border-radius:4px;">W-36</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <span style="background:rgba(251,146,60,0.15); color:#fb923c; padding:4px 12px; border-radius:20px; font-size:0.65rem; font-weight:700;">FEED</span>
+                        </div>
+                        <div style="height:380px;"><canvas id="stdFeedChart"></canvas></div>
+                    </div>
+
+                    <!-- old canvas kept hidden for JS compatibility -->
+                    <canvas id="growthChart2" style="display:none;"></canvas>
+                </div>
+
+                <!-- Summary Cards -->
+                <div style="display:grid; gap:1rem; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); margin-top:1.5rem;">
+                    <div class="card" style="text-align:center;">
+                        <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:0.5rem;">⚖️ Target Weight (Current Age)</div>
+                        <div id="target-weight-val" style="font-size:1.4rem; font-weight:800; color:var(--primary);">—</div>
+                    </div>
+                    <div class="card" style="text-align:center;">
+                        <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:0.5rem;">🌾 Standard Feed / Day</div>
+                        <div id="target-feed-val" style="font-size:1.4rem; font-weight:800; color:#10b981;">—</div>
+                    </div>
+                    <div class="card" style="text-align:center;">
+                        <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:0.5rem;">📅 Current Phase</div>
+                        <div id="target-phase-val" style="font-size:1.1rem; font-weight:800; color:#fbbf24;">—</div>
+                    </div>
+                    <div class="card" style="text-align:center;">
+                        <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:0.5rem;">💧 Standard Water / Bird</div>
+                        <div id="target-water-val" style="font-size:1.4rem; font-weight:800; color:#38bdf8;">—</div>
+                    </div>
+                    <div class="card" style="text-align:center;">
+                        <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:0.5rem;">🥚 Target Egg Weight</div>
+                        <div id="target-eggwt-val" style="font-size:1.4rem; font-weight:800; color:#10b981;">—</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: HEALTH -->
+            <div id="health-view" class="tab-view" style="display: none;">
+                <div class="mini-grid" style="display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+                    <div class="card">
+                        <div class="card-title">Symptom Checker (AI Diagnostic)</div>
+                        <div id="symptom-list"
+                            style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem;">
+                            <label class="check-container"><input type="checkbox" value="green_diarrhea"> Green Diarrhea</label>
+                            <label class="check-container"><input type="checkbox" value="bloody_diarrhea"> Bloody Diarrhea</label>
+                            <label class="check-container"><input type="checkbox" value="coughing"> Coughing</label>
+                            <label class="check-container"><input type="checkbox" value="sneezing"> Sneezing</label>
+                            <label class="check-container"><input type="checkbox" value="nervous_signs"> Nervous Signs</label>
+                            <label class="check-container"><input type="checkbox" value="swollen_face"> Swollen Face</label>
+                            <label class="check-container"><input type="checkbox" value="wet_eyes"> Wet Eyes</label>
+                            <label class="check-container"><input type="checkbox" value="weight_loss"> Weight Loss</label>
+                        </div>
+                        <button class="btn-predict" onclick="runDiagnosis()">ANALYZE HEALTH</button>
+                        <div id="diagnosis-result" style="margin-top: 1.5rem;"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Upcoming Vaccinations</div>
+                        <div id="vaccination-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: HISTORY -->
+            <div id="history-view" class="tab-view" style="display: none;">
+                <div class="card">
+                    <div class="card-title">History Logs</div>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; margin-top: 1rem; min-width: 600px;">
+                            <thead
+                                style="text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); font-size: 0.75rem;">
+                                <tr>
+                                    <th style="padding: 1rem;">Time</th>
+                                    <th>Birds</th>
+                                    <th>Breed</th>
+                                    <th>Yield (Eggs)</th>
+                                    <th>Startup Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: FEED OPTIMIZER -->
+            <div id="optimizer-view" class="tab-view" style="display: none;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start;">
+                    <div class="card">
+                        <div class="card-title">🌾 Feed Optimization Engine</div>
+                        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:1.5rem;">Enter your flock parameters to get an AI-optimized daily feed recommendation that maximizes egg output while minimizing cost.</p>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+                            <div class="form-group">
+                                <label>Flock Size</label>
+                                <input type="number" id="opt-birds" class="form-input" value="5000">
+                            </div>
+                            <div class="form-group">
+                                <label>Bird Age (Weeks)</label>
+                                <input type="number" id="opt-age" class="form-input" value="28">
+                            </div>
+                            <div class="form-group">
+                                <label>Temp (°C)</label>
+                                <input type="number" id="opt-temp" class="form-input" value="23">
+                            </div>
+                            <div class="form-group">
+                                <label>Humidity (%)</label>
+                                <input type="number" id="opt-hum" class="form-input" value="60">
+                            </div>
+                            <div class="form-group">
+                                <label>Feed Price (PKR/kg)</label>
+                                <input type="number" id="opt-fprice" class="form-input" value="260">
+                            </div>
+                            <div class="form-group">
+                                <label>Egg Price (PKR/ea)</label>
+                                <input type="number" id="opt-eprice" class="form-input" value="30">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-top:0.5rem;">
+                            <label>Bird Type</label>
+                            <select id="opt-breed" class="form-input">
+                                <option value="commercial">Commercial (Leghorn)</option>
+                                <option value="desi">Indigenous (Desi)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Season</label>
+                            <select id="opt-season" class="form-input">
+                                <option value="spring">Spring</option>
+                                <option value="summer">Summer</option>
+                                <option value="winter">Winter</option>
+                                <option value="autumn">Autumn</option>
+                            </select>
+                        </div>
+                        <button class="btn-predict" onclick="runOptimizer()">⚡ OPTIMIZE FEED</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">📊 Optimization Results</div>
+                        <div id="opt-result-box" style="opacity:0.3; transition:opacity 0.4s;">
+                            <div class="opt-result" id="opt-result-inner">
+                                <div class="opt-row"><span class="opt-key">Optimal Feed/Bird/Day</span><span class="opt-val" id="opt-res-feed">—</span></div>
+                                <div class="opt-row"><span class="opt-key">Total Feed/Day (kg)</span><span class="opt-val" id="opt-res-total-feed">—</span></div>
+                                <div class="opt-row"><span class="opt-key">Expected Egg Yield</span><span class="opt-val" id="opt-res-eggs">—</span></div>
+                                <div class="opt-row"><span class="opt-key">Production Efficiency</span><span class="opt-val" id="opt-res-eff">—</span></div>
+                                <div class="opt-row"><span class="opt-key">Daily Feed Cost (PKR)</span><span class="opt-val" id="opt-res-cost">—</span></div>
+                                <div class="opt-row"><span class="opt-key">Daily Revenue (PKR)</span><span class="opt-val" id="opt-res-rev">—</span></div>
+                                <div class="opt-row"><span class="opt-key">Net Daily Profit (PKR)</span><span class="opt-val" id="opt-res-profit" style="color:var(--success);">—</span></div>
+                            </div>
+                            <div id="opt-ai-insight" class="ai-insight-box" style="margin-top:1rem;"></div>
+                        </div>
+                        <div style="height:280px; margin-top:1.5rem;">
+                            <canvas id="optChart"></canvas>
                         </div>
                     </div>
-                    <div class="card">
-                        <div class="card-title">⚖️ Feed vs Output</div>
-                        <div style="height: 220px;"><canvas id="feedOutputChart"></canvas></div>
+                </div>
+
+                <div class="card" style="margin-top:1.5rem;">
+                    <div class="card-title">📅 7-Day Feed Plan</div>
+                    <div style="overflow-x:auto;">
+                        <table style="width:100%; border-collapse:collapse; min-width:500px;">
+                            <thead style="border-bottom:1px solid rgba(255,255,255,0.1); color:var(--text-muted); font-size:0.75rem;">
+                                <tr>
+                                    <th style="padding:0.8rem;">Day</th>
+                                    <th>Feed / Bird (g)</th>
+                                    <th>Total Feed (kg)</th>
+                                    <th>Expected Eggs</th>
+                                    <th>Est. Profit (PKR)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="opt-plan-tbody"></tbody>
+                        </table>
                     </div>
-                    
-                    <div class="card" id="logging-panel">
-                        <div class="card-title">📝 Quick Log</div>
-                        <div class="form-group"><input type="number" id="log-eggs" class="form-input" placeholder="Eggs today"></div>
-                        <div class="form-group"><input type="number" id="log-feed" class="form-input" placeholder="Feed (kg)"></div>
-                        <button class="btn-predict" style="background:var(--success); font-size: 0.75rem; padding: 0.6rem;" onclick="submitDailyLog()">SAVE LOG</button>
-                    </div>
                 </div>
             </div>
-            <!-- 3 Section Layout End -->
-        </div>
 
-        <div id="monitoring-view" class="tab-view" style="display: none;">
-            <div class="card">
-                <div class="card-title">Environmental Trends (Last 7 Days)</div>
-                <div style="height: 400px;"><canvas id="envChart"></canvas></div>
-            </div>
-            <div class="mini-grid" style="display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+            <!-- TAB: SETTINGS -->
+            <div id="settings-view" class="tab-view" style="display: none;">
                 <div class="card">
-                    <div class="card-title">Mortality Tracker</div>
-                    <div style="height: 250px;"><canvas id="mortalityChart"></canvas></div>
+                    <div class="card-title">System Settings</div>
+                    <div class="form-group"><label>Farm Name</label><input type="text" class="form-input"
+                            value="My Smart Poultry Farm"></div>
+                    <div class="form-group"><label>Notification Email</label><input type="email" class="form-input"
+                            value="farmer@example.com"></div>
+                    <div class="form-group"><label>Default Currency</label><select class="form-input">
+                            <option>PKR</option>
+                            <option>USD</option>
+                        </select></div>
+                    <button class="btn-predict" style="margin-top:1rem;">SAVE PREFERENCES</button>
                 </div>
                 <div class="card">
-                    <div class="card-title">FCR Analysis</div>
-                    <div style="height: 250px;"><canvas id="fcrChart"></canvas></div>
+                    <div class="card-title">Account Management</div>
+                    <button class="btn-predict" style="background:var(--danger); box-shadow:none;"
+                        onclick="resetData()">RESET ALL DATA</button>
                 </div>
             </div>
-        </div>
 
-
-
-        <div id="growth-view" class="tab-view" style="display: none;">
-
-            <!-- Phase 1: Growing Period -->
-            <div class="card">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;">
-                    <div class="card-title" style="margin-bottom:0;">🐣 Phase 1: Growing Period — Week 1 to Week 17</div>
-                    <span style="background:rgba(59,130,246,0.15); color:#3b82f6; padding:4px 12px; border-radius:20px; font-size:0.7rem; font-weight:700;">PRE-LAY STAGE</span>
-                </div>
-                <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:1rem;">
-                    Brooding &amp; rearing phase — weekly body weight growth 🔵 aur daily feed intake 🟢 per bird.
-                </p>
-                <div style="height:380px;"><canvas id="growthChart1"></canvas></div>
-            </div>
-
-            <!-- Phase 2: Laying Period -->
-            <div class="card" style="margin-top:1.5rem;">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;">
-                    <div class="card-title" style="margin-bottom:0;">🥚 Phase 2: Laying Period — Week 18 to Week 80</div>
-                    <span style="background:rgba(16,185,129,0.15); color:#10b981; padding:4px 12px; border-radius:20px; font-size:0.7rem; font-weight:700;">EGG PRODUCTION STAGE</span>
-                </div>
-                <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:1rem;">
-                    Egg production phase — body weight stabilization 🔵 aur recommended daily feed 🟢 per bird.
-                </p>
-                <div style="height:380px;"><canvas id="growthChart2"></canvas></div>
-            </div>
-
-            <!-- Summary Cards -->
-            <div style="display:grid; gap:1rem; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); margin-top:1.5rem;">
-                <div class="card" style="text-align:center;">
-                    <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:0.5rem;">⚖️ Target Weight (Current Age)</div>
-                    <div id="target-weight-val" style="font-size:1.4rem; font-weight:800; color:var(--primary);">—</div>
-                </div>
-                <div class="card" style="text-align:center;">
-                    <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:0.5rem;">🌾 Standard Feed / Day</div>
-                    <div id="target-feed-val" style="font-size:1.4rem; font-weight:800; color:#10b981;">—</div>
-                </div>
-                <div class="card" style="text-align:center;">
-                    <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:0.5rem;">📅 Current Phase</div>
-                    <div id="target-phase-val" style="font-size:1.1rem; font-weight:800; color:#fbbf24;">—</div>
-                </div>
-            </div>
-        </div>
-
-        <div id="validation-view" class="tab-view" style="display: none;">
-            <div class="validation-grid" style="display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
-                <div class="card">
-                    <div class="card-title">Learning Curves</div><img src="/static/plots/learning_curves.png" style="width: 100%; height: auto; border-radius: 8px;">
-                </div>
-                <div class="card">
-                    <div class="card-title">Residual Plot</div><img src="/static/plots/residual_plot.png" style="width: 100%; height: auto; border-radius: 8px;">
-                </div>
-                <div class="card">
-                    <div class="card-title">Feature Importance</div><img
-                        src="/static/plots/feature_importance_model.png" style="width: 100%; height: auto; border-radius: 8px;">
-                </div>
-                <div class="card">
-                    <div class="card-title">Noise Robustness</div><img src="/static/plots/noise_simulation.png" style="width: 100%; height: auto; border-radius: 8px;">
-                </div>
-            </div>
-        </div>
-        <div id="health-view" class="tab-view" style="display: none;">
-            <div class="mini-grid" style="display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
-                <div class="card">
-                    <div class="card-title">Symptom Checker (AI Diagnostic)</div>
-                    <div id="symptom-list"
-                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem;">
-                        <label class="check-container"><input type="checkbox" value="green_diarrhea"> Green
-                            Diarrhea</label>
-                        <label class="check-container"><input type="checkbox" value="bloody_diarrhea"> Bloody
-                            Diarrhea</label>
-                        <label class="check-container"><input type="checkbox" value="coughing"> Coughing</label>
-                        <label class="check-container"><input type="checkbox" value="sneezing"> Sneezing</label>
-                        <label class="check-container"><input type="checkbox" value="nervous_signs"> Nervous
-                            Signs</label>
-                        <label class="check-container"><input type="checkbox" value="swollen_face"> Swollen Face</label>
-                        <label class="check-container"><input type="checkbox" value="wet_eyes"> Wet Eyes</label>
-                        <label class="check-container"><input type="checkbox" value="weight_loss"> Weight Loss</label>
-                    </div>
-                    <button class="btn-predict" onclick="runDiagnosis()">ANALYZE HEALTH</button>
-                    <div id="diagnosis-result" style="margin-top: 1.5rem;"></div>
-                </div>
-                <div class="card">
-                    <div class="card-title">Upcoming Vaccinations</div>
-                    <div id="vaccination-list"></div>
-                </div>
-            </div>
-        </div>
-
-        <div id="history-view" class="tab-view" style="display: none;">
-            <div class="card">
-                <div class="card-title">History Logs</div>
-                <div style="overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse; margin-top: 1rem; min-width: 600px;">
-                        <thead
-                            style="text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); font-size: 0.75rem;">
-                            <tr>
-                                <th style="padding: 1rem;">Time</th>
-                                <th>Birds</th>
-                                <th>Breed</th>
-                                <th>Yield</th>
-                                <th>Profit</th>
-                            </tr>
-                        </thead>
-                        <tbody id="history-tbody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div id="settings-view" class="tab-view" style="display: none;">
-            <div class="card">
-                <div class="card-title">System Settings</div>
-                <div class="form-group"><label>Farm Name</label><input type="text" class="form-input"
-                        value="My Smart Poultry Farm"></div>
-                <div class="form-group"><label>Notification Email</label><input type="email" class="form-input"
-                        value="farmer@example.com"></div>
-                <div class="form-group"><label>Default Currency</label><select class="form-input">
-                        <option>PKR</option>
-                        <option>USD</option>
-                    </select></div>
-                <button class="btn-predict" style="margin-top:1rem;">SAVE PREFERENCES</button>
-            </div>
-            <div class="card">
-                <div class="card-title">Account Management</div>
-                <button class="btn-predict" style="background:var(--danger); box-shadow:none;"
-                    onclick="resetData()">RESET ALL DATA</button>
-            </div>
-        </div>
         </div>
     </div>
 
     <script>
         let charts = {};
-        let lastData = null;
+        let lastTrendData = null;
         let currentTrendView = 'eggs';
-        document.getElementById('current-date').innerText = new Date().toLocaleDateString();
+        let currentGrowthPhase = 'growing';
 
+        // Growth Standard W-36 Datasets
+        const growWeeks  = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17];
+        const comGrowWt  = [65,115,180,250,330,420,510,600,690,790,880,960,1030,1100,1170,1210,1250];
+        const comGrowFd  = [13,18,24,30,36,42,48,54,57,60,63,66,68,70,72,74,76];
+        const indGrowWt  = [40,75,110,160,215,275,340,410,480,550,620,695,770,840,900,955,1000];
+        const indGrowFd  = [10,15,20,25,30,34,38,42,46,49,52,55,57,59,61,63,65];
+
+        const layWeeks   = [18,19,20,25,30,35,40,45,50,55,60,65,70,75,80];
+        const comLayWt   = [1280,1340,1380,1500,1530,1555,1570,1575,1580,1580,1580,1580,1580,1580,1580];
+        const comLayFd   = [88,95,100,105,108,109,110,109,108,107,105,103,102,101,100];
+        const indLayWt   = [1040,1080,1100,1150,1180,1200,1220,1230,1240,1245,1250,1250,1250,1250,1250];
+        const indLayFd   = [70,74,78,82,85,86,87,87,87,86,85,84,83,81,80];
+
+        // Fade out loader on window load
+        window.addEventListener('load', () => {
+            const loader = document.getElementById('loader');
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 500);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            
+            // Set dynamic username based on cookies
+            const username = document.cookie.match(/username=([^;]+)/)?.[1] || 'Farmer';
+            document.getElementById('welcome-username').textContent = username;
+            document.getElementById('header-avatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=fbbf24&color=000`;
+
+            // Trend view select listener
+            document.querySelectorAll('#trend-view-select .badge-opt').forEach(opt => {
+                opt.addEventListener('click', (e) => {
+                    document.querySelectorAll('#trend-view-select .badge-opt').forEach(o => o.classList.remove('active'));
+                    opt.classList.add('active');
+                    currentTrendView = opt.getAttribute('data-view');
+                    if (lastTrendData) {
+                        renderPredictionTrendChart(lastTrendData);
+                    }
+                });
+            });
+
+            // Breed select listener
+            document.querySelectorAll('#breed-select .badge-opt').forEach(opt => {
+                opt.addEventListener('click', () => {
+                    document.querySelectorAll('#breed-select .badge-opt').forEach(o => o.classList.remove('active'));
+                    opt.classList.add('active');
+                    document.getElementById('Breed').value = opt.getAttribute('data-val');
+                    renderGrowthChart();
+                });
+            });
+
+            // Init values
+            updateIndicators();
+            loadDashboardData();
+            loadVaccinations();
+            loadAlerts();
+            renderGrowthChart();
+            loadHistoryLogs();
+
+            // Refresh alert checker every 30 seconds
+            setInterval(loadAlerts, 30000);
+        });
+
+        // Tab Switching Logic
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-view').forEach(view => {
+                view.style.display = 'none';
+            });
+            const selected = document.getElementById(tabId + '-view');
+            if (selected) selected.style.display = 'block';
+            
+            document.querySelectorAll('.sidebar .nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            // Update active state in sidebar nav items
+            const navItems = document.querySelectorAll('.sidebar .nav-item');
+            navItems.forEach(item => {
+                if (item.getAttribute('onclick') && item.getAttribute('onclick').includes(`'${tabId}'`)) {
+                    item.classList.add('active');
+                }
+            });
+
+            // Close mobile sidebar if open
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            if (sidebar) sidebar.classList.remove('active');
+            if (overlay) overlay.classList.remove('active');
+        }
+
+        // Sidebar toggler for mobile screens
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            if (sidebar) sidebar.classList.toggle('active');
+            if (overlay) overlay.classList.toggle('active');
+        }
+
+        // Theme switching (dark / light)
         function toggleTheme() {
             const body = document.body;
-            const icon = document.getElementById('theme-toggle');
-            const iconMob = document.getElementById('theme-toggle-mobile');
-            if (body.getAttribute('data-theme') === 'dark') {
-                body.setAttribute('data-theme', 'light');
-                icon.className = iconMob.className = 'fas fa-moon action-icon';
-            } else {
-                body.setAttribute('data-theme', 'dark');
-                icon.className = iconMob.className = 'fas fa-sun action-icon';
-            }
-            if (lastData) renderCharts(lastData);
+            const isDark = body.getAttribute('data-theme') === 'dark';
+            const newTheme = isDark ? 'light' : 'dark';
+            body.setAttribute('data-theme', newTheme);
+            const themeIcon = document.getElementById('theme-toggle');
+            const themeIconMobile = document.getElementById('theme-toggle-mobile');
+            if (themeIcon) themeIcon.className = newTheme === 'dark' ? 'fas fa-sun action-icon' : 'fas fa-moon action-icon';
+            if (themeIconMobile) themeIconMobile.className = newTheme === 'dark' ? 'fas fa-sun action-icon' : 'fas fa-moon action-icon';
+            
+            // Re-render growth standards to update text and grid colors
+            renderGrowthChart();
         }
 
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('active');
-            document.querySelector('.sidebar-overlay').classList.toggle('active');
-        }
-
-        function switchTab(tab) {
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            const targetNav = Array.from(document.querySelectorAll('.nav-item')).find(n => n.innerText.toLowerCase().includes(tab));
-            if (targetNav) targetNav.classList.add('active');
-            document.querySelectorAll('.tab-view').forEach(v => v.style.display = 'none');
-            if (window.innerWidth <= 1100) toggleSidebar();
-
-            if (tab === 'dashboard') { document.getElementById('dashboard-view').style.display = 'block'; window.scrollTo({ top: 0, behavior: 'smooth' }); }
-            else if (tab === 'monitoring') { document.getElementById('monitoring-view').style.display = 'block'; renderMonitoringCharts(); }
-            else if (tab === 'health') { document.getElementById('health-view').style.display = 'block'; updateVaccinations(); }
-            else if (tab === 'prediction') { document.getElementById('dashboard-view').style.display = 'block'; document.getElementById('prediction-panel').scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-            else if (tab === 'history') { document.getElementById('history-view').style.display = 'block'; loadHistory(); }
-            else if (tab === 'settings') { document.getElementById('settings-view').style.display = 'block'; }
-            else if (tab === 'validation') { document.getElementById('validation-view').style.display = 'block'; }
-            else if (tab === 'growth') { document.getElementById('growth-view').style.display = 'block'; renderGrowthChart(); }
-        }
-
-        // Badge Selection Logic
-        document.querySelectorAll('.badge-opt').forEach(opt => {
-            opt.addEventListener('click', () => {
-                const parent = opt.parentElement;
-                parent.querySelectorAll('.badge-opt').forEach(o => o.classList.remove('active'));
-                opt.classList.add('active');
-                const targetInput = parent.id === 'breed-select' ? 'Breed' : null;
-                if (targetInput) {
-                    document.getElementById(targetInput).value = opt.dataset.val;
-                    if (document.getElementById('growth-view') && document.getElementById('growth-view').style.display !== 'none') {
-                        renderGrowthChart();
-                    }
-                }
-            });
-        });
-
-        document.getElementById('Age').addEventListener('input', () => {
-            if (document.getElementById('growth-view') && document.getElementById('growth-view').style.display !== 'none') {
-                renderGrowthChart();
-            }
-        });
-        
-        document.querySelectorAll('#trend-view-select .badge-opt').forEach(opt => {
-            opt.addEventListener('click', () => {
-                currentTrendView = opt.dataset.view;
-                if (lastData) renderCharts(lastData);
-            });
-        });
-
+        // Indicator colors and thresholds
         function updateIndicators() {
-            const temp = parseFloat(document.getElementById('Temperature').value);
-            const hum = parseFloat(document.getElementById('Humidity').value);
-            const amm = parseFloat(document.getElementById('Ammonia').value);
+            const temp = +document.getElementById('Temperature').value;
+            const hum = +document.getElementById('Humidity').value;
+            const ammonia = +document.getElementById('Ammonia').value;
 
-            const setInd = (id, inputId, val, range) => {
-                const el = document.getElementById(id);
-                const input = document.getElementById(inputId);
-                const msgEl = document.getElementById('msg-' + inputId);
-                if (!el) return;
-                
-                el.className = 'param-indicator';
-                if (input) input.classList.remove('input-warning', 'input-danger');
-                if (msgEl) { msgEl.className = 'input-msg'; msgEl.innerText = ''; }
+            const indTemp = document.getElementById('ind-temp');
+            const msgTemp = document.getElementById('msg-Temperature');
+            if (temp < 15 || temp > 28) {
+                indTemp.className = 'param-indicator indicator-red';
+                msgTemp.className = 'input-msg msg-danger';
+                msgTemp.textContent = temp < 15 ? 'Cold stress warning' : 'Heat stress warning';
+            } else if (temp < 18 || temp > 26) {
+                indTemp.className = 'param-indicator indicator-yellow';
+                msgTemp.className = 'input-msg msg-warning';
+                msgTemp.textContent = 'Sub-optimal temperature';
+            } else {
+                indTemp.className = 'param-indicator indicator-green';
+                msgTemp.className = 'input-msg';
+                msgTemp.textContent = '';
+            }
 
-                if (val >= range.ok[0] && val <= range.ok[1]) {
-                    el.classList.add('indicator-green');
-                } else if (val >= range.warn[0] && val <= range.warn[1]) {
-                    el.classList.add('indicator-yellow');
-                    if (input) input.classList.add('input-warning');
-                    if (msgEl) {
-                        msgEl.classList.add('msg-warning');
-                        msgEl.innerText = `Warning: Suboptimal ${inputId}`;
-                    }
-                } else {
-                    el.classList.add('indicator-red');
-                    if (input) input.classList.add('input-danger');
-                    if (msgEl) {
-                        msgEl.classList.add('msg-danger');
-                        msgEl.innerText = `Critical: High ${inputId} Alert!`;
-                    }
-                }
-            };
+            const indHum = document.getElementById('ind-hum');
+            const msgHum = document.getElementById('msg-Humidity');
+            if (hum < 40 || hum > 75) {
+                indHum.className = 'param-indicator indicator-red';
+                msgHum.className = 'input-msg msg-danger';
+                msgHum.textContent = hum < 40 ? 'Too dry' : 'Humidity too high';
+            } else if (hum < 50 || hum > 70) {
+                indHum.className = 'param-indicator indicator-yellow';
+                msgHum.className = 'input-msg msg-warning';
+                msgHum.textContent = 'Sub-optimal humidity';
+            } else {
+                indHum.className = 'param-indicator indicator-green';
+                msgHum.className = 'input-msg';
+                msgHum.textContent = '';
+            }
 
-            setInd('ind-temp', 'Temperature', temp, { ok: [20, 25], warn: [18, 27] });
-            setInd('ind-hum', 'Humidity', hum, { ok: [50, 65], warn: [40, 75] });
-            setInd('ind-amm', 'Ammonia', amm, { ok: [0, 10], warn: [11, 20] });
+            const indAmm = document.getElementById('ind-amm');
+            const msgAmm = document.getElementById('msg-Ammonia');
+            if (ammonia > 20) {
+                indAmm.className = 'param-indicator indicator-red';
+                msgAmm.className = 'input-msg msg-danger';
+                msgAmm.textContent = 'Dangerous ammonia levels!';
+            } else if (ammonia > 12) {
+                indAmm.className = 'param-indicator indicator-yellow';
+                msgAmm.className = 'input-msg msg-warning';
+                msgAmm.textContent = 'High ammonia level';
+            } else {
+                indAmm.className = 'param-indicator indicator-green';
+                msgAmm.className = 'input-msg';
+                msgAmm.textContent = '';
+            }
         }
-        updateIndicators();
 
+        // Perform AI Prediction
         async function runPrediction() {
-            const btn = document.getElementById('main-run-btn');
-            const status = document.getElementById('ai-status');
-            btn.style.opacity = '0.5';
-            btn.disabled = true;
-            status.style.display = 'block';
+            const chickens = +document.getElementById('Amount_of_chicken').value;
+            const feed_g = +document.getElementById('Feed_per_Chicken_g').value;
+            const temp = +document.getElementById('Temperature').value;
+            const hum = +document.getElementById('Humidity').value;
+            const ammonia = +document.getElementById('Ammonia').value;
+            const light_lux = +document.getElementById('Light_Intensity').value;
+            const light_dur = +document.getElementById('Light_Duration').value;
+            const noise = +document.getElementById('Noise').value;
+            const breed = document.getElementById('Breed').value;
+            const age = +document.getElementById('Age').value;
+            const system = document.getElementById('System_Type').value;
+            const season = document.getElementById('Season').value;
+            const feed_price = +document.getElementById('Feed_Price').value;
+            const egg_price = +document.getElementById('Egg_Price').value;
 
-            const payload = {
-                Amount_of_chicken: document.getElementById('Amount_of_chicken').value,
-                Feed_per_Chicken_g: document.getElementById('Feed_per_Chicken_g').value,
-                Temperature: document.getElementById('Temperature').value,
-                Humidity: document.getElementById('Humidity').value,
-                Ammonia: document.getElementById('Ammonia').value,
-                Breed: document.getElementById('Breed').value,
-                Age: document.getElementById('Age').value,
-                System_Type: document.getElementById('System_Type').value,
-                Season: document.getElementById('Season').value,
-                Feed_Price_per_kg: document.getElementById('Feed_Price').value,
-                Egg_Price_per_unit: document.getElementById('Egg_Price').value,
-                Noise: document.getElementById('Noise').value,
-                Light_Intensity: document.getElementById('Light_Intensity').value,
-                Light_Duration: document.getElementById('Light_Duration').value
-            };
+            const statusP = document.getElementById('ai-status');
+            const btn = document.getElementById('main-run-btn');
+            if (statusP) statusP.style.display = 'block';
+            if (btn) {
+                btn.innerHTML = '🟡 ANALYZING...';
+                btn.disabled = true;
+            }
 
             try {
+                const body = {
+                    Amount_of_chicken: chickens,
+                    Feed_per_Chicken_g: feed_g,
+                    Temperature: temp,
+                    Humidity: hum,
+                    Ammonia: ammonia,
+                    Light_Intensity: light_lux,
+                    Light_Duration: light_dur,
+                    Noise: noise,
+                    Breed: breed,
+                    Age: age,
+                    System_Type: system,
+                    Season: season,
+                    Feed_Price_per_kg: feed_price,
+                    Egg_Price_per_unit: egg_price
+                };
+
                 const res = await fetch('/api/predict', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(body)
                 });
-                const data = await res.json();
-                if (data.success) {
-                    lastData = data;
-                    updateResultsUI(data);
-                    renderCharts(data);
+                const d = await res.json();
+                if (!d.success) {
+                    alert(d.error || 'Prediction failed');
+                    return;
                 }
-            } catch (e) { 
-                console.error(e); 
-                alert("AI Analysis failed. Check server connection.");
-            }
-            finally {
-                btn.style.opacity = '1';
-                btn.disabled = false;
-                status.style.display = 'none';
+
+                // Show results panel with opacity
+                document.getElementById('results-container').style.opacity = '1';
+                document.getElementById('res-eggs').textContent = d.predicted_eggs.toLocaleString();
+                document.getElementById('res-efficiency').textContent = (d.predicted_per_chicken * 100).toFixed(1) + '% Efficiency';
+                
+                const econ = d.economics || {};
+                document.getElementById('res-profit').textContent = 'PKR ' + Math.round(econ.monthly_profit_pkr).toLocaleString();
+                document.getElementById('res-startup').textContent = Math.round(econ.startup_cost_pkr).toLocaleString();
+                document.getElementById('res-feed').textContent = Math.round(econ.monthly_feed_cost_pkr).toLocaleString();
+                
+                // Risk label
+                const risk = d.risk || {};
+                const riskEl = document.getElementById('res-risk');
+                riskEl.textContent = risk.label;
+                if (risk.label === 'High' || risk.label === 'Critical') {
+                    riskEl.style.color = 'var(--danger)';
+                } else if (risk.label === 'Medium') {
+                    riskEl.style.color = 'var(--primary)';
+                } else {
+                    riskEl.style.color = 'var(--success)';
+                }
+                document.getElementById('res-risk-score').textContent = 'Safety: ' + (100 - risk.score).toFixed(0) + '%';
+
+                // Insights
+                const insightsContainer = document.getElementById('insights-container');
+                if (insightsContainer && d.ai_insights) {
+                    insightsContainer.innerHTML = d.ai_insights.map(ins => `
+                        <div class="insight-item">
+                            <i class="fas fa-circle-info"></i>
+                            <span>${ins}</span>
+                        </div>
+                    `).join('');
+                }
+
+                // Charts rendering
+                renderPredictionTrendChart(d.trend_data);
+                renderShapChart(d.feature_contributions);
+                renderCostChart(econ);
+                renderFeedOutputChart(chickens, d.predicted_eggs, econ.daily_feed_kg);
+
+                loadHistoryLogs();
+            } catch (e) {
+                console.error(e);
+                alert('Error performing prediction: ' + e.message);
+            } finally {
+                if (statusP) statusP.style.display = 'none';
+                if (btn) {
+                    btn.innerHTML = '🟡 RUN AI ANALYSIS';
+                    btn.disabled = false;
+                }
             }
         }
 
-        function updateResultsUI(data) {
-            const container = document.getElementById('results-container');
-            container.style.opacity = '1';
+        // Render decision breakdown chart (SHAP model breakdown)
+        function renderShapChart(contributions) {
+            if (!contributions || !contributions.length) return;
+            const ctx = document.getElementById('shapChart').getContext('2d');
+            if (charts.shap) charts.shap.destroy();
             
-            // Big Cards
-            document.getElementById('res-eggs').innerText = data.predicted_eggs.toLocaleString();
-            document.getElementById('res-efficiency').innerText = `${Math.round(data.predicted_per_chicken * 100)}% Production Efficiency`;
+            const sorted = [...contributions].sort((a,b) => b.impact - a.impact);
             
-            const profitVal = Math.round(data.economics.monthly_profit_pkr);
-            const profitEl = document.getElementById('res-profit');
-            profitEl.innerText = `${profitVal.toLocaleString()} PKR`;
-            profitEl.style.color = profitVal > 0 ? 'var(--success)' : 'var(--danger)';
-            
-            const riskEl = document.getElementById('res-risk');
-            riskEl.innerText = data.risk.label;
-            riskEl.style.color = data.risk.color;
-            document.getElementById('res-risk-score').innerText = `Safety Score: ${100 - data.risk.score}%`;
+            const labels = sorted.map(c => c.label);
+            const data = sorted.map(c => c.impact);
+            const backgroundColors = sorted.map(c => c.impact >= 0 ? 'rgba(16, 185, 129, 0.7)' : 'rgba(239, 68, 68, 0.7)');
+            const borderColors = sorted.map(c => c.impact >= 0 ? '#10b981' : '#ef4444');
 
-            // Insights
-            const insightsList = document.getElementById('insights-container');
-            insightsList.innerHTML = data.ai_insights.map(msg => `
-                <div class="insight-item">
-                    <i class="fas fa-circle-check"></i>
-                    <span>${msg}</span>
-                </div>
-            `).join('') || '<div class="insight-item"><span>No critical insights detected.</span></div>';
-
-            // Right Panel Minis
-            document.getElementById('res-startup').innerText = Math.round(data.economics.startup_cost_pkr / 1000).toLocaleString() + 'k';
-            document.getElementById('res-feed').innerText = Math.round(data.economics.monthly_feed_cost_pkr / 1000).toLocaleString() + 'k';
+            charts.shap = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Impact on Production Yield',
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: 'var(--text-muted)' }
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: { color: 'var(--text-main)' }
+                        }
+                    }
+                }
+            });
         }
 
-        function renderCharts(data) {
-            const isDark = document.body.getAttribute('data-theme') === 'dark';
-            const color = isDark ? '#94a3b8' : '#64748b';
-            const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
-
-            // 1. Production Trend
+        // Prediction Trend Chart
+        function renderPredictionTrendChart(trendData) {
+            lastTrendData = trendData;
+            if (!trendData || !trendData.length) return;
+            const ctx = document.getElementById('trendChart').getContext('2d');
             if (charts.trend) charts.trend.destroy();
-            let chartData, labelStr, tooltipFormat, tickFormat;
-            
-            if (currentTrendView === 'eggs') {
-                chartData = data.trend_data.map(d => d.eggs);
-                labelStr = 'Projected Eggs';
-                tooltipFormat = (item) => `Eggs: ${item.eggs.toLocaleString()} (${item.efficiency}% Efficiency)`;
-                tickFormat = (val) => val.toLocaleString();
-            } else if (currentTrendView === 'efficiency') {
-                chartData = data.trend_data.map(d => d.efficiency);
-                labelStr = 'Production Efficiency (%)';
-                tooltipFormat = (item) => `Efficiency: ${item.efficiency}%`;
-                tickFormat = (val) => val + '%';
+
+            let datasetLabel = 'Predicted Eggs';
+            let data = [];
+            let borderColor = '#fbbf24';
+            let backgroundColor = 'rgba(251, 191, 36, 0.1)';
+
+            if (currentTrendView === 'efficiency') {
+                datasetLabel = 'Production Efficiency %';
+                data = trendData.map(t => t.efficiency);
+                borderColor = '#10b981';
+                backgroundColor = 'rgba(16, 185, 129, 0.1)';
+            } else if (currentTrendView === 'feed') {
+                datasetLabel = 'Feed Intake (g)';
+                data = trendData.map(t => t.feed);
+                borderColor = '#3b82f6';
+                backgroundColor = 'rgba(59, 130, 246, 0.1)';
             } else {
-                chartData = data.trend_data.map(d => d.feed || 0);
-                labelStr = 'Feed Intake (g/bird)';
-                tooltipFormat = (item) => `Feed: ${item.feed} g/bird`;
-                tickFormat = (val) => val + 'g';
+                data = trendData.map(t => t.eggs);
             }
 
-            charts.trend = new Chart(document.getElementById('trendChart'), {
+            charts.trend = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: data.trend_data.map(d => `W${d.age}`),
+                    labels: trendData.map(t => t.age + ' W'),
                     datasets: [{
-                        label: labelStr,
-                        data: chartData,
-                        borderColor: '#fbbf24',
-                        backgroundColor: 'rgba(251, 191, 36, 0.1)',
+                        label: datasetLabel,
+                        data: data,
+                        borderColor: borderColor,
+                        backgroundColor: backgroundColor,
                         fill: true,
-                        tension: 0.4,
-                        borderWidth: 3,
-                        pointRadius: 4
+                        tension: 0.4
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { 
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const index = context.dataIndex;
-                                    const item = data.trend_data[index];
-                                    return tooltipFormat(item);
-                                }
-                            }
-                        }
-                    },
                     scales: {
-                        y: { 
-                            grid: { color: gridColor }, 
-                            ticks: { 
-                                color,
-                                callback: function(value) {
-                                    return tickFormat(value);
-                                }
-                            } 
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: 'var(--text-muted)' }
                         },
-                        x: { grid: { display: false }, ticks: { color } }
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: 'var(--text-main)' }
+                        }
                     }
                 }
             });
+        }
 
-            // 2. Cost Breakdown (Pie)
+        // Cost breakdown doughnut chart
+        function renderCostChart(econ) {
+            const ctx = document.getElementById('costChart').getContext('2d');
             if (charts.cost) charts.cost.destroy();
-            charts.cost = new Chart(document.getElementById('costChart'), {
+
+            const birdCost = econ.bird_cost_total_pkr || 0;
+            const infraCost = econ.infrastructure_cost_total_pkr || 0;
+            const feedCost = econ.monthly_feed_cost_pkr || 0;
+
+            charts.cost = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Feed', 'Birds', 'Infra'],
+                    labels: ['Bird Cost', 'Infrastructure', 'Feed / Month'],
                     datasets: [{
-                        data: [data.economics.monthly_feed_cost_pkr, data.economics.bird_cost_total_pkr, data.economics.infrastructure_cost_total_pkr],
-                        backgroundColor: ['#fbbf24', '#10b981', '#3b82f6'],
-                        borderWidth: 0,
-                        hoverOffset: 10
+                        data: [birdCost, infraCost, feedCost],
+                        backgroundColor: [
+                            'rgba(251, 191, 36, 0.8)',
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(16, 185, 129, 0.8)'
+                        ],
+                        borderColor: [
+                            '#fbbf24',
+                            '#3b82f6',
+                            '#10b981'
+                        ],
+                        borderWidth: 1
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'bottom', labels: { color, font: { size: 10 } } }
-                    },
-                    cutout: '70%'
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: 'var(--text-muted)' }
+                        }
+                    }
                 }
             });
+        }
 
-            // 3. Feed vs Output (Bar)
+        // Feed vs Output Chart
+        function renderFeedOutputChart(chickens, predictedEggs, dailyFeedKg) {
+            const ctx = document.getElementById('feedOutputChart').getContext('2d');
             if (charts.feedOutput) charts.feedOutput.destroy();
-            charts.feedOutput = new Chart(document.getElementById('feedOutputChart'), {
+
+            charts.feedOutput = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: ['Daily'],
+                    labels: ['Feed Input (kg/day)', 'Egg Output (units/day)'],
+                    datasets: [{
+                        label: 'Daily Values',
+                        data: [dailyFeedKg, predictedEggs],
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.7)',
+                            'rgba(251, 191, 36, 0.7)'
+                        ],
+                        borderColor: [
+                            '#3b82f6',
+                            '#fbbf24'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: 'var(--text-muted)' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: 'var(--text-main)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Quick log submit daily log
+        async function submitDailyLog() {
+            const eggs = +document.getElementById('log-eggs').value;
+            const feed = +document.getElementById('log-feed').value;
+            const mortality = +document.getElementById('log-mortality').value;
+            const weight = +document.getElementById('log-weight').value || 0;
+            const water = +document.getElementById('log-water').value || 0;
+            const eggWt = +document.getElementById('log-egg-weight').value || 0;
+            const chickens = +document.getElementById('Amount_of_chicken').value;
+            const temp = +document.getElementById('Temperature').value;
+            const hum = +document.getElementById('Humidity').value;
+            const ammonia = +document.getElementById('Ammonia').value;
+            const date = new Date().toISOString().split('T')[0];
+
+            if (isNaN(eggs) || isNaN(feed)) {
+                alert('Please enter valid egg yield and feed values.');
+                return;
+            }
+
+            try {
+                const body = {
+                    date,
+                    chickens,
+                    eggs,
+                    feed_kg: feed,
+                    mortality,
+                    temp,
+                    humidity: hum,
+                    ammonia,
+                    bird_weight: weight,
+                    water_liters: water,
+                    egg_weight_g: eggWt
+                };
+
+                const res = await fetch('/api/logs', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const d = await res.json();
+                if (!d.success) {
+                    alert(d.error || 'Failed to save log');
+                    return;
+                }
+
+                alert('Daily Log saved successfully!');
+                document.getElementById('log-eggs').value = '';
+                document.getElementById('log-feed').value = '';
+                document.getElementById('log-mortality').value = '0';
+                document.getElementById('log-weight').value = '';
+                document.getElementById('log-water').value = '';
+                document.getElementById('log-egg-weight').value = '';
+                
+                loadDashboardData();
+                loadHistoryLogs();
+            } catch (e) {
+                console.error(e);
+                alert('Network error while saving log.');
+            }
+        }
+
+        // Load farm monitoring data
+        async function loadDashboardData() {
+            try {
+                const r = await fetch('/api/chart_data');
+                if (!r.ok) return;
+                const d = await r.json();
+                if (!d.success) return;
+                
+                // Populate KPIs
+                const last = arr => arr && arr.length ? arr[arr.length-1] : null;
+                const chickens = +document.getElementById('Amount_of_chicken').value;
+                document.getElementById('kpi-birds').textContent = chickens.toLocaleString();
+                
+                if (d.eggs && d.eggs.length) {
+                    document.getElementById('kpi-eggs').textContent = last(d.eggs).toLocaleString();
+                    document.getElementById('kpi-feed').textContent = last(d.feed_kg).toFixed(1);
+                    document.getElementById('kpi-mortality').textContent = last(d.mortality);
+                }
+                
+                renderMonitoringCharts(d);
+            } catch (e) {
+                console.warn('Dashboard load error:', e);
+            }
+        }
+
+        // Draw monitoring tab charts
+        function renderMonitoringCharts(d) {
+            if (!d.labels || !d.labels.length) return;
+            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            const color = isDark ? '#8b949e' : '#4b5563';
+            const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+
+            // Environment Chart
+            const ctxEnv = document.getElementById('envChart').getContext('2d');
+            if (charts.env) charts.env.destroy();
+            charts.env = new Chart(ctxEnv, {
+                type: 'line',
+                data: {
+                    labels: d.labels,
                     datasets: [
-                        { label: 'Feed (kg)', data: [data.economics.daily_feed_kg], backgroundColor: '#3b82f6', borderRadius: 5 },
-                        { label: 'Eggs (x10)', data: [data.predicted_eggs / 10], backgroundColor: '#fbbf24', borderRadius: 5 }
+                        { label: 'Temp (°C)', data: d.temperature, borderColor: '#f0883e', tension: 0.4 },
+                        { label: 'Humidity (%)', data: d.humidity, borderColor: '#58a6ff', tension: 0.4 },
+                        { label: 'Ammonia (ppm)', data: d.ammonia, borderColor: '#ef4444', tension: 0.4 }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { labels: { color, font: { size: 10 } } } },
                     scales: {
-                        y: { grid: { color: gridColor }, ticks: { color } },
-                        x: { grid: { display: false }, ticks: { color } }
+                        y: { grid: { color: gridColor }, ticks: { color: color } },
+                        x: { grid: { color: gridColor }, ticks: { color: color } }
                     }
                 }
             });
 
-            // 4. SHAP-like Feature Contribution Chart
-            if (data.feature_contributions && data.feature_contributions.length > 0) {
-                if (charts.shap) charts.shap.destroy();
-                const contribs = data.feature_contributions;
-                charts.shap = new Chart(document.getElementById('shapChart'), {
-                    type: 'bar',
-                    data: {
-                        labels: contribs.map(c => c.label),
-                        datasets: [{
-                            label: 'Impact on Production',
-                            data: contribs.map(c => c.impact),
-                            backgroundColor: contribs.map(c => c.impact >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(239, 68, 68, 0.8)'),
-                            borderColor: contribs.map(c => c.impact >= 0 ? '#10b981' : '#ef4444'),
-                            borderWidth: 1,
-                            borderRadius: 4
-                        }]
-                    },
-                    options: {
-                        indexAxis: 'y',
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(ctx) {
-                                        const c = contribs[ctx.dataIndex];
-                                        const dir = c.impact >= 0 ? '▲ Helping' : '▼ Hurting';
-                                        return `${dir} | Value: ${c.value} | Importance: ${(c.importance * 100).toFixed(1)}%`;
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            x: {
-                                grid: { color: gridColor },
-                                ticks: { color },
-                                title: { display: true, text: '← Hurting Production | Helping Production →', color, font: { size: 10 } }
-                            },
-                            y: { grid: { display: false }, ticks: { color, font: { size: 11, weight: 'bold' } } }
-                        }
+            // Mortality Chart
+            const ctxMort = document.getElementById('mortalityChart').getContext('2d');
+            if (charts.mortality) charts.mortality.destroy();
+            charts.mortality = new Chart(ctxMort, {
+                type: 'bar',
+                data: {
+                    labels: d.labels,
+                    datasets: [{ label: 'Mortality', data: d.mortality, backgroundColor: 'rgba(239, 68, 68, 0.7)' }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { grid: { color: gridColor }, ticks: { color: color } },
+                        x: { grid: { color: gridColor }, ticks: { color: color } }
                     }
-                });
-            }
-        }
-
-        async function submitDailyLog() {
-            const payload = {
-                eggs: document.getElementById('log-eggs').value,
-                feed_kg: document.getElementById('log-feed').value,
-                chickens: document.getElementById('Amount_of_chicken').value,
-                temp: document.getElementById('Temperature').value,
-                humidity: document.getElementById('Humidity').value,
-                ammonia: document.getElementById('Ammonia').value,
-                mortality: 0,
-                date: new Date().toISOString().split('T')[0]
-            };
-            try {
-                const res = await fetch('/api/logs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                const data = await res.json();
-                if (data.success) { alert("Daily log saved successfully!"); }
-            } catch (e) { alert("Error saving log."); }
-        }
-
-        async function fetchAlerts() {
-            try {
-                const res = await fetch('/api/alerts');
-                const data = await res.json();
-                const badge = document.getElementById('alert-badge');
-                const list = document.getElementById('alerts-list');
-                if (data.alerts && badge && list) {
-                    badge.innerText = data.alerts.length;
-                    badge.style.display = data.alerts.length > 0 ? 'flex' : 'none';
-                    list.innerHTML = data.alerts.map(a => `<div style="padding:0.8rem; border-bottom:1px solid rgba(255,255,255,0.05); font-size:0.75rem;">
-                        <div style="color:var(--primary); font-weight:800; margin-bottom:4px;">${a.type}</div>
-                        <div>${a.message}</div>
-                    </div>`).join('') || '<div style="text-align:center; color:var(--text-muted); padding:1rem;">No active alerts</div>';
                 }
-            } catch (e) {
-                console.error("Error in fetchAlerts:", e);
-            }
-        }
+            });
 
-        function toggleAlerts() {
-            const drop = document.getElementById('alerts-dropdown');
-            drop.style.display = drop.style.display === 'none' ? 'block' : 'none';
-        }
-
-        async function loadHistory() {
-            try {
-                const res = await fetch('/api/history');
-                const data = await res.json();
-                const tbody = document.getElementById('history-tbody');
-                tbody.innerHTML = data.history.map(r => {
-                    const effPct = r.chickens > 0 ? Math.round((r.predicted_eggs / r.chickens) * 100) : 0;
-                    return `<tr>
-                        <td style="padding: 1rem;">${new Date(r.timestamp).toLocaleDateString()}</td>
-                        <td>${r.chickens.toLocaleString()}</td>
-                        <td style="text-transform: capitalize;">${r.breed}</td>
-                        <td>${r.predicted_eggs.toLocaleString()} (${effPct}%)</td>
-                        <td>${r.total_startup_cost.toLocaleString()} PKR</td>
-                    </tr>`;
-                }).join('');
-            } catch (e) {}
-        }
-
-
-
-        async function renderMonitoringCharts() {
-            try {
-                const res = await fetch('/api/chart_data');
-                const data = await res.json();
-                
-                const isDark = document.body.getAttribute('data-theme') === 'dark';
-                const color = isDark ? '#94a3b8' : '#64748b';
-                
-                let labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-                let temps = [22, 23, 24, 22, 21, 23, 22];
-                let mortality = [0, 1, 0, 0, 2, 0, 0];
-                let fcr = [1.8, 1.85, 1.75, 1.8, 1.9, 1.82, 1.8];
-
-                if (data.success && data.labels && data.labels.length > 0) {
-                    labels = data.labels.slice(-7);
-                    temps = data.temperature.slice(-7);
-                    mortality = data.mortality.slice(-7);
-                    // simple FCR mock based on history if available
-                    fcr = data.feed_kg.slice(-7).map((f, i) => {
-                        const e = data.eggs.slice(-7)[i];
-                        return (e > 0 && f > 0) ? (f / (e * 0.05)) : 1.8;
-                    });
-                }
-
-                if (charts.env) charts.env.destroy();
-                charts.env = new Chart(document.getElementById('envChart'), {
-                    type: 'line',
-                    data: { labels: labels, datasets: [{ label: 'Temp °C', data: temps, borderColor: '#ef4444', tension: 0.4 }] },
-                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color } }, x: { ticks: { color } } } }
-                });
-
-                if (charts.mortality) charts.mortality.destroy();
-                charts.mortality = new Chart(document.getElementById('mortalityChart'), {
-                    type: 'bar',
-                    data: { labels: labels, datasets: [{ label: 'Mortality', data: mortality, backgroundColor: '#10b981' }] },
-                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color } }, x: { ticks: { color } } } }
-                });
-
-                if (charts.fcr) charts.fcr.destroy();
-                charts.fcr = new Chart(document.getElementById('fcrChart'), {
-                    type: 'line',
-                    data: { labels: labels, datasets: [{ label: 'FCR (Feed / Egg Mass)', data: fcr, borderColor: '#3b82f6', tension: 0.4, fill: true, backgroundColor: 'rgba(59, 130, 246, 0.1)' }] },
-                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color } }, x: { ticks: { color } } } }
-                });
-            } catch (e) {
-                console.error("Error loading monitoring charts", e);
-            }
-        }
-
-        function renderGrowthChart() {
-            const isDark = document.body.getAttribute('data-theme') === 'dark';
-            const color = isDark ? '#94a3b8' : '#64748b';
-            const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
-            const currentBreed = (document.getElementById('Breed').value || 'commercial').toLowerCase();
-            const currentAge = parseInt(document.getElementById('Age').value) || 28;
-            const isCommercial = currentBreed === 'commercial';
-
-            // ── PHASE 1: Growing (Week 1-17) ───────────────────────────────
-            const growWeeks  = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17];
-            const comGrowWt  = [65,115,180,250,330,420,510,600,690,790,880,960,1030,1100,1170,1210,1250];
-            const comGrowFd  = [13,18,24,30,36,42,48,54,57,60,63,66,68,70,72,74,76];
-            const indGrowWt  = [40,75,110,160,215,275,340,410,480,550,620,695,770,840,900,955,1000];
-            const indGrowFd  = [10,15,20,25,30,34,38,42,46,49,52,55,57,59,61,63,65];
-
-            // ── PHASE 2: Laying (Week 18-80) ───────────────────────────────
-            const layWeeks   = [18,19,20,25,30,35,40,45,50,55,60,65,70,75,80];
-            const comLayWt   = [1280,1340,1380,1500,1530,1555,1570,1575,1580,1580,1580,1580,1580,1580,1580];
-            const comLayFd   = [88,95,100,105,108,109,110,109,108,107,105,103,102,101,100];
-            const indLayWt   = [1040,1080,1100,1150,1180,1200,1220,1230,1240,1245,1250,1250,1250,1250,1250];
-            const indLayFd   = [70,74,78,82,85,86,87,87,87,86,85,84,83,81,80];
-
-            const growWt = isCommercial ? comGrowWt : indGrowWt;
-            const growFd = isCommercial ? comGrowFd : indGrowFd;
-            const layWt  = isCommercial ? comLayWt  : indLayWt;
-            const layFd  = isCommercial ? comLayFd  : indLayFd;
-
-            // ── Interpolate current age targets ───────────────────────────
-            const allW = [...growWeeks, ...layWeeks];
-            const allWt = [...growWt, ...layWt];
-            const allFd = [...growFd, ...layFd];
-            let targetWt = allWt[allWt.length-1], targetFd = allFd[allFd.length-1];
-            for (let i = 0; i < allW.length - 1; i++) {
-                if (currentAge >= allW[i] && currentAge <= allW[i+1]) {
-                    const t = (currentAge - allW[i]) / (allW[i+1] - allW[i]);
-                    targetWt = Math.round(allWt[i] + t*(allWt[i+1]-allWt[i]));
-                    targetFd = Math.round(allFd[i] + t*(allFd[i+1]-allFd[i]));
-                    break;
-                }
-            }
-            if (currentAge < allW[0]) { targetWt = allWt[0]; targetFd = allFd[0]; }
-
-            document.getElementById('target-weight-val').innerText = (targetWt/1000).toFixed(2) + ' kg (' + targetWt + ' g)';
-            document.getElementById('target-feed-val').innerText = targetFd + ' g / day';
-            document.getElementById('target-phase-val').innerText = currentAge <= 17 ? '🐣 Growing (Pre-Lay)' : '🥚 Laying Phase';
-
-            // ── Helper: build dual-axis chart ─────────────────────────────
-            function buildChart(key, canvasId, labels, wtData, fdData) {
-                if (charts[key]) charts[key].destroy();
-
-                // Mark current flock week on whichever series it falls in
-                const wtHighlight = labels.map((w,i) => w === currentAge ? wtData[i] : null);
-                const fdHighlight = labels.map((w,i) => w === currentAge ? fdData[i] : null);
-
-                charts[key] = new Chart(document.getElementById(canvasId), {
-                    type: 'line',
-                    data: {
-                        labels: labels.map(w => 'W' + w),
-                        datasets: [
-                            {
-                                label: 'Body Weight (g)',
-                                data: wtData,
-                                borderColor: '#3b82f6',
-                                backgroundColor: 'rgba(59,130,246,0.08)',
-                                borderWidth: 2.5, tension: 0.35,
-                                pointRadius: 4, pointHoverRadius: 7,
-                                fill: true, yAxisID: 'yWt'
-                            },
-                            {
-                                label: 'Daily Feed (g/bird)',
-                                data: fdData,
-                                borderColor: '#10b981',
-                                backgroundColor: 'rgba(16,185,129,0.07)',
-                                borderWidth: 2.5, tension: 0.35,
-                                borderDash: [6,3],
-                                pointRadius: 4, pointHoverRadius: 7,
-                                fill: true, yAxisID: 'yFd'
-                            },
-                            {
-                                label: 'Your Flock — Weight',
-                                data: wtHighlight,
-                                borderColor: '#fbbf24', backgroundColor: '#fbbf24',
-                                pointRadius: 9, pointHoverRadius: 11,
-                                showLine: false, yAxisID: 'yWt',
-                                pointStyle: 'star'
-                            },
-                            {
-                                label: 'Your Flock — Feed',
-                                data: fdHighlight,
-                                borderColor: '#f97316', backgroundColor: '#f97316',
-                                pointRadius: 9, pointHoverRadius: 11,
-                                showLine: false, yAxisID: 'yFd',
-                                pointStyle: 'star'
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true, maintainAspectRatio: false,
-                        interaction: { mode: 'index', intersect: false },
-                        plugins: {
-                            legend: { display: true, labels: { color, font: { size: 11 } } },
-                            tooltip: {
-                                callbacks: {
-                                    label: ctx => {
-                                        if (ctx.raw === null) return null;
-                                        const unit = ctx.dataset.yAxisID === 'yWt' ? ' g (weight)' : ' g (feed)';
-                                        return ctx.dataset.label + ': ' + ctx.raw + unit;
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            yWt: {
-                                type:'linear', position:'left',
-                                grid: { color: gridColor },
-                                ticks: { color: '#3b82f6', callback: v => v+'g' },
-                                title: { display:true, text:'Body Weight (g)', color:'#3b82f6' }
-                            },
-                            yFd: {
-                                type:'linear', position:'right',
-                                grid: { drawOnChartArea: false },
-                                ticks: { color:'#10b981', callback: v => v+'g' },
-                                title: { display:true, text:'Feed (g/bird/day)', color:'#10b981' }
-                            },
-                            x: {
-                                grid: { color: gridColor },
-                                ticks: { color }
-                            }
-                        }
+            // FCR Chart
+            const ctxFcr = document.getElementById('fcrChart').getContext('2d');
+            if (charts.fcr) charts.fcr.destroy();
+            const fcr = d.feed_kg.map((f, i) => {
+                const e = d.eggs[i];
+                return (e > 0) ? (f / (e * 0.05)).toFixed(2) : 0;
+            });
+            charts.fcr = new Chart(ctxFcr, {
+                type: 'line',
+                data: {
+                    labels: d.labels,
+                    datasets: [{ label: 'FCR (Feed / Egg Mass)', data: fcr, borderColor: '#3b82f6', fill: true, backgroundColor: 'rgba(59, 130, 246, 0.1)', tension: 0.4 }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { grid: { color: gridColor }, ticks: { color: color } },
+                        x: { grid: { color: gridColor }, ticks: { color: color } }
                     }
-                });
-            }
-
-            buildChart('growth1', 'growthChart1', growWeeks, growWt, growFd);
-            buildChart('growth2', 'growth2', layWeeks, layWt, layFd);
+                }
+            });
         }
 
+        // Disease diagnosis checker
         async function runDiagnosis() {
             const symptoms = Array.from(document.querySelectorAll('#symptom-list input:checked')).map(cb => cb.value);
             if (symptoms.length === 0) {
@@ -1508,56 +1885,697 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ symptoms })
                 });
-                const data = await res.json();
+                const d = await res.json();
                 const resultDiv = document.getElementById('diagnosis-result');
-                if (data.diagnosis && data.diagnosis.length > 0) {
-                    resultDiv.innerHTML = data.diagnosis.map(d => `
-                        <div style="padding: 1rem; border-left: 4px solid ${d.severity === 'Critical' ? 'var(--danger)' : 'var(--primary)'}; background: var(--input-bg); margin-bottom: 1rem; border-radius: 8px;">
-                            <h4 style="color: var(--primary);">${d.disease} (Score: ${d.score}%)</h4>
-                            <p style="font-size: 0.8rem; margin: 0.5rem 0;"><b>Severity:</b> ${d.severity}</p>
-                            <p style="font-size: 0.8rem; margin: 0.5rem 0;"><b>Treatment:</b> ${d.treatment}</p>
-                            <p style="font-size: 0.8rem; margin: 0.5rem 0;"><b>Meds:</b> ${d.meds.join(', ')}</p>
+                if (d.success && d.diagnosis && d.diagnosis.length > 0) {
+                    resultDiv.innerHTML = d.diagnosis.map(diag => `
+                        <div style="background: var(--bg-dark); padding: 1.2rem; border-radius: 12px; border-left: 4px solid ${diag.severity === 'Critical' ? 'var(--danger)' : 'var(--primary)'}; margin-bottom: 1rem;">
+                            <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom: 0.5rem;">
+                                <span>${diag.disease}</span>
+                                <span style="color: var(--primary);">${diag.score}% match</span>
+                            </div>
+                            <div style="font-size:0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">Severity: ${diag.severity}</div>
+                            <div style="font-size:0.85rem; margin-bottom: 0.5rem;"><strong>Treatment:</strong> ${diag.treatment}</div>
+                            <div style="font-size:0.85rem;"><strong>Recommended Meds:</strong> ${diag.meds.join(', ')}</div>
                         </div>
                     `).join('');
                 } else {
-                    resultDiv.innerHTML = '<div style="padding: 1rem; color: var(--success);">No critical diseases matched. Monitor the flock closely.</div>';
+                    resultDiv.innerHTML = `<p style="font-size:0.85rem; color:var(--text-muted);">No matching disease found.</p>`;
                 }
             } catch (e) {
-                alert('Error analyzing health.');
+                console.error(e);
+                alert('Diagnosis failed.');
             }
         }
 
-        async function updateVaccinations() {
-            const age = document.getElementById('Age').value;
-            const res = await fetch('/api/health/vaccinations?age=' + age);
-            const data = await res.json();
-            const list = document.getElementById('vaccination-list');
-            list.innerHTML = data.schedule.map(v => `<div style="padding:0.8rem; border-bottom:1px solid rgba(255,255,255,0.05);"><b>W${v.week}:</b> ${v.vaccine}</div>`).join('');
+        // Vaccination List
+        async function loadVaccinations() {
+            const age = +document.getElementById('Age').value || 1;
+            try {
+                const res = await fetch('/api/health/vaccinations?age=' + age);
+                const d = await res.json();
+                const vaxList = document.getElementById('vaccination-list');
+                if (d.success && d.schedule && d.schedule.length > 0) {
+                    vaxList.innerHTML = d.schedule.map(v => `
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding: 0.8rem; background: var(--bg-dark); border-radius: 12px; margin-bottom: 0.5rem;">
+                            <div>
+                                <div style="font-weight: 700; font-size: 0.85rem;">${v.vaccine}</div>
+                                <div style="font-size: 0.72rem; color: var(--text-muted);">Week ${v.week} • Target: ${v.disease}</div>
+                            </div>
+                            <span style="font-size: 0.72rem; background: var(--primary-glow); color: var(--primary); padding: 4px 8px; border-radius: 6px; font-weight:700;">Scheduled</span>
+                        </div>
+                    `).join('');
+                } else {
+                    vaxList.innerHTML = `<p style="font-size:0.85rem; color:var(--text-muted);">No upcoming vaccinations for this age.</p>`;
+                }
+            } catch (e) {
+                console.warn('Vaccinations load error:', e);
+            }
         }
 
+        // History logs
+        async function loadHistoryLogs() {
+            try {
+                const res = await fetch('/api/history');
+                const d = await res.json();
+                if (!d.success) return;
+
+                const tbody = document.getElementById('history-tbody');
+                if (d.history && d.history.length > 0) {
+                    tbody.innerHTML = d.history.map(h => {
+                        const date = new Date(h.timestamp).toLocaleString();
+                        return `
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem;">
+                                <td style="padding: 1rem; color: var(--text-main);">${date}</td>
+                                <td>${h.chickens.toLocaleString()}</td>
+                                <td>${h.breed}</td>
+                                <td style="color: var(--primary); font-weight:700;">${Math.round(h.predicted_eggs).toLocaleString()}</td>
+                                <td style="color: var(--success); font-weight:700;">PKR ${Math.round(h.total_startup_cost).toLocaleString()}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 2rem; color: var(--text-muted);">No records found.</td></tr>`;
+                }
+            } catch (e) {
+                console.warn('History logs load error:', e);
+            }
+        }
+
+        // Reset data
         async function resetData() {
-            if (confirm("Reset all data?")) {
-                await fetch('/api/reset_data', { method: 'POST' });
-                location.reload();
+            if (!confirm('Are you sure you want to reset all farm logs, alerts, and predictions? This cannot be undone.')) {
+                return;
+            }
+            try {
+                const res = await fetch('/api/reset_data', { method: 'POST' });
+                const d = await res.json();
+                if (d.success) {
+                    alert('Your farm data has been reset.');
+                    loadDashboardData();
+                    loadHistoryLogs();
+                } else {
+                    alert(d.error || 'Failed to reset data');
+                }
+            } catch (e) {
+                alert('Network error during reset.');
             }
         }
 
-        fetchAlerts();
-        setInterval(fetchAlerts, 30000);
-
-        function hideLoader() {
-            const loader = document.getElementById('loader');
-            if (loader) {
-                loader.style.opacity = '0';
-                setTimeout(() => loader.style.display = 'none', 500);
+        // Alerts dropdown population
+        async function loadAlerts() {
+            try {
+                const res = await fetch('/api/alerts');
+                const d = await res.json();
+                if (!d.success) return;
+                
+                const alerts = d.alerts || [];
+                const badge = document.getElementById('alert-badge');
+                const list = document.getElementById('alerts-list');
+                
+                if (alerts.length > 0) {
+                    badge.style.display = 'flex';
+                    badge.textContent = alerts.length;
+                    
+                    list.innerHTML = alerts.map(a => `
+                        <div style="padding: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.8rem;">
+                            <div style="font-weight: bold; color: var(--primary); margin-bottom: 2px;">${a.type}</div>
+                            <div style="color: var(--text-main);">${a.message}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    badge.style.display = 'none';
+                    list.innerHTML = `<p style="font-size:0.8rem; color:var(--text-muted); text-align:center; padding:1rem 0;">No active alerts.</p>`;
+                }
+            } catch (e) {
+                console.warn('Alerts load error:', e);
             }
         }
 
-        if (document.readyState === 'complete') {
-            hideLoader();
-        } else {
-            window.addEventListener('load', hideLoader);
+        // Toggle alert box visibility
+        function toggleAlerts() {
+            const dropdown = document.getElementById('alerts-dropdown');
+            if (dropdown) {
+                dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+            }
         }
+
+        // PDF Export
+        function exportPDF() {
+            const element = document.querySelector('.main-stage');
+            const opt = {
+                margin:       0.3,
+                filename:     'FlockSense_AI_Report.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, backgroundColor: document.body.getAttribute('data-theme') === 'light' ? '#f1f5f9' : '#0f172a' },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+
+        // Growth Standards charts rendering and subphase switching
+        function switchGrowthPhase(phase) {
+            currentGrowthPhase = phase;
+            document.getElementById('btn-phase-grow').classList.toggle('active', phase === 'growing');
+            document.getElementById('btn-phase-lay').classList.toggle('active', phase === 'laying');
+            
+            document.getElementById('growth-growing-section').style.display = phase === 'growing' ? 'block' : 'none';
+            document.getElementById('growth-laying-section').style.display = phase === 'laying' ? 'block' : 'none';
+            
+            renderGrowthChart();
+        }
+
+        function renderGrowthChart() {
+            const breed = document.getElementById('Breed').value || 'commercial';
+            const isCommercial = breed === 'commercial';
+            const currentAge = +document.getElementById('Age').value || 28;
+
+            const farmName = document.getElementById('growth-farm-name').value || 'UVAS FAI45';
+            const hatchDateRaw = document.getElementById('growth-hatch-date').value || '2018-05-15';
+            const housedQty = document.getElementById('growth-housed').value || '100,000';
+            const strain = document.getElementById('growth-strain').value || 'W-36';
+
+            const formattedHatchDate = new Date(hatchDateRaw).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+
+            document.querySelectorAll('.lbl-farm-val').forEach(el => el.textContent = farmName);
+            document.querySelectorAll('.lbl-hatch-val').forEach(el => el.textContent = 'Hatch: ' + formattedHatchDate);
+            document.querySelectorAll('.lbl-housed-val').forEach(el => el.textContent = 'Housed: ' + parseInt(housedQty).toLocaleString());
+            document.querySelectorAll('.lbl-strain-val').forEach(el => el.textContent = strain);
+
+            const growWt = isCommercial ? comGrowWt : indGrowWt;
+            const growFd = isCommercial ? comGrowFd : indGrowFd;
+            const layWt = isCommercial ? comLayWt : indLayWt;
+            const layFd = isCommercial ? comLayFd : indLayFd;
+
+            let targetWt = 0;
+            let targetFd = 0;
+            
+            if (currentGrowthPhase === 'growing') {
+                drawGrowingCharts(growWeeks, growWt, growFd, currentAge);
+            } else {
+                drawW36Charts();
+            }
+
+            if (currentAge <= 17) {
+                const idx = Math.min(currentAge - 1, growWeeks.length - 1);
+                targetWt = growWt[idx] || 0;
+                targetFd = growFd[idx] || 0;
+                document.getElementById('target-phase-val').textContent = '🐣 Growing (Pre-Lay)';
+                document.getElementById('target-phase-val').style.color = 'var(--primary)';
+            } else {
+                let closestIdx = 0;
+                let minDiff = Infinity;
+                for (let i = 0; i < layWeeks.length; i++) {
+                    const diff = Math.abs(layWeeks[i] - currentAge);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closestIdx = i;
+                    }
+                }
+                targetWt = layWt[closestIdx] || 0;
+                targetFd = layFd[closestIdx] || 0;
+                document.getElementById('target-phase-val').textContent = '🥚 Laying Phase';
+                document.getElementById('target-phase-val').style.color = 'var(--success)';
+            }
+
+            document.getElementById('target-weight-val').textContent = targetWt ? targetWt + ' g' : '—';
+            document.getElementById('target-feed-val').textContent = targetFd ? targetFd + ' g / bird / day' : '—';
+        }
+
+        // Draw Growing Phase Chart
+        function drawGrowingCharts(weeks, weights, feeds, currentAge) {
+            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            const color = isDark ? '#8b949e' : '#4b5563';
+            const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+
+            const wtHighlight = weeks.map(w => w === currentAge ? weights[w-1] : null);
+
+            // Chart 1: Body Weight Standard
+            const ctx1 = document.getElementById('growthMortalityChart').getContext('2d');
+            if (charts.growthMortality) charts.growthMortality.destroy();
+
+            charts.growthMortality = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: weeks.map(w => 'Wk ' + w),
+                    datasets: [
+                        {
+                            label: 'Standard Body Weight (g)',
+                            data: weights,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            fill: false,
+                            yAxisID: 'yWt',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Your Flock Weight Highlight',
+                            data: wtHighlight,
+                            borderColor: '#fbbf24',
+                            backgroundColor: '#fbbf24',
+                            pointRadius: 8,
+                            showLine: false,
+                            yAxisID: 'yWt'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        yWt: {
+                            type: 'linear',
+                            position: 'left',
+                            grid: { color: gridColor },
+                            ticks: { color: '#3b82f6', callback: v => v + 'g' },
+                            title: { display: true, text: 'Body Weight (g)', color: '#3b82f6' }
+                        },
+                        x: {
+                            grid: { color: gridColor },
+                            ticks: { color: color }
+                        }
+                    }
+                }
+            });
+
+            // Chart 2: Weekly weight gain
+            const ctx2 = document.getElementById('growthGainChart').getContext('2d');
+            if (charts.growthGain) charts.growthGain.destroy();
+
+            const gains = weights.map((w, idx) => {
+                if (idx === 0) return w - 40;
+                return w - weights[idx-1];
+            });
+
+            charts.growthGain = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: weeks.map(w => 'Wk ' + w),
+                    datasets: [
+                        {
+                            label: 'Weekly Body Weight Gain (g)',
+                            data: gains,
+                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                            borderColor: '#10b981',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            grid: { color: gridColor },
+                            ticks: { color: color, callback: v => v + 'g' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: color }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Draw Laying Phase Chart
+        function drawLayingChart(weeks, weights, feeds, currentAge) {
+            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            const color = isDark ? '#8b949e' : '#4b5563';
+            const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+
+            const wtHighlight = weeks.map(w => w === currentAge ? weights[weeks.indexOf(w)] : null);
+            const fdHighlight = weeks.map(w => w === currentAge ? feeds[weeks.indexOf(w)] : null);
+
+            const ctx = document.getElementById('growthChart2').getContext('2d');
+            if (charts.growth2) charts.growth2.destroy();
+
+            charts.growth2 = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: weeks.map(w => 'Wk ' + w),
+                    datasets: [
+                        {
+                            label: 'Standard Body Weight (g)',
+                            data: weights,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            fill: false,
+                            yAxisID: 'yWt',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Recommended Daily Feed (g)',
+                            data: feeds,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            fill: false,
+                            yAxisID: 'yFd',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Your Flock Weight Highlight',
+                            data: wtHighlight,
+                            borderColor: '#fbbf24',
+                            backgroundColor: '#fbbf24',
+                            pointRadius: 8,
+                            showLine: false,
+                            yAxisID: 'yWt'
+                        },
+                        {
+                            label: 'Your Flock Feed Highlight',
+                            data: fdHighlight,
+                            borderColor: '#f97316',
+                            backgroundColor: '#f97316',
+                            pointRadius: 8,
+                            showLine: false,
+                            yAxisID: 'yFd'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        yWt: {
+                            type: 'linear',
+                            position: 'left',
+                            grid: { color: gridColor },
+                            ticks: { color: '#3b82f6', callback: v => v + 'g' },
+                            title: { display: true, text: 'Body Weight (g)', color: '#3b82f6' }
+                        },
+                        yFd: {
+                            type: 'linear',
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                            ticks: { color: '#10b981', callback: v => v + 'g' },
+                            title: { display: true, text: 'Feed (g/bird/day)', color: '#10b981' }
+                        },
+                        x: {
+                            grid: { color: gridColor },
+                            ticks: { color: color }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ============================================================
+        // W-36 LAYING PERIOD STANDARD CHARTS
+        // ============================================================
+
+        // W-36 Standard Reference Data (Weeks 15 to 90)
+        const W36_WEEKS = [15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,66,68,70,72,74,76,78,80,82,84,86,88,90];
+
+        // Body Weight std (g) for W-36 - based on published Hy-Line W-36 performance standards
+        const W36_BW_STD = [1325,1360,1390,1415,1430,1440,1450,1460,1465,1470,1475,1478,1480,1483,1485,1487,1490,1492,1495,1497,1500,1502,1505,1507,1510,1512,1515,1517,1520,1522,1525,1527,1528,1530,1532,1535,1536,1538,1540,1542,1545,1547,1548,1550,1552,1555];
+        const W36_BW_MIN = W36_BW_STD.map(v => v - 35);
+        const W36_BW_MAX = W36_BW_STD.map(v => v + 35);
+
+        // Egg Weight std (g)
+        const W36_EW_STD = [44,46,48,50,52,53.5,55,56.5,57.5,58.5,59.2,59.8,60.3,60.8,61.2,61.5,62.0,62.4,62.7,63.0,63.2,63.4,63.5,63.6,63.7,63.7,63.8,63.8,63.8,63.8,63.8,63.8,63.8,63.8,63.8,63.7,63.7,63.6,63.6,63.5,63.5,63.4,63.4,63.3,63.2,63.2];
+        const W36_EW_MIN = W36_EW_STD.map(v => v - 1.5);
+        const W36_EW_MAX = W36_EW_STD.map(v => v + 1.5);
+
+        // Water Consumption std (L/bird/day)
+        const W36_WC_STD = [0.165,0.172,0.178,0.182,0.185,0.188,0.190,0.192,0.194,0.195,0.196,0.196,0.197,0.197,0.197,0.197,0.196,0.196,0.195,0.195,0.194,0.194,0.193,0.192,0.192,0.191,0.190,0.189,0.188,0.187,0.186,0.185,0.184,0.183,0.182,0.181,0.180,0.179,0.178,0.177,0.176,0.175,0.174,0.173,0.172,0.171];
+        const W36_WC_MIN = W36_WC_STD.map(v => +(v - 0.015).toFixed(3));
+        const W36_WC_MAX = W36_WC_STD.map(v => +(v + 0.015).toFixed(3));
+
+        // Feed Consumption std (g/bird/day)
+        const W36_FC_STD = [60,68,75,80,84,87,90,92,94,95,96,97,97,98,98,98,98,98,98,98,98,98,97,97,97,97,96,96,96,96,95,95,95,95,94,94,94,93,93,93,92,92,91,91,91,90];
+        const W36_FC_MIN = W36_FC_STD.map(v => v - 4);
+        const W36_FC_MAX = W36_FC_STD.map(v => v + 4);
+
+        async function drawW36Charts() {
+            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            const color  = isDark ? '#8b949e' : '#4b5563';
+            const gridC  = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+            const labels = W36_WEEKS.map(w => 'Wk ' + w);
+
+            // Fetch actual logged data
+            let actBW = [], actEW = [], actWC = [], actFC = [], actLabels = [];
+            try {
+                const r = await fetch('/api/chart_data');
+                if (r.ok) {
+                    const d = await r.json();
+                    if (d.success && d.total_records > 0) {
+                        actLabels = d.labels;
+                        actBW = d.bird_weight.map(v => v > 0 ? +(v).toFixed(0) : null);
+                        actEW = d.egg_weight_g.map(v => v > 0 ? +v.toFixed(1) : null);
+                        actWC = d.water_liters.map((v, i) => {
+                            if (!v || v <= 0 || !d.chickens[i] || d.chickens[i] <= 0) return null;
+                            return +(v / d.chickens[i]).toFixed(4);
+                        });
+                        actFC = d.feed_kg.map((v, i) => {
+                            if (!v || v <= 0 || !d.chickens[i] || d.chickens[i] <= 0) return null;
+                            return +((v * 1000) / d.chickens[i]).toFixed(1);
+                        });
+                    }
+                }
+            } catch(e) { /* no actual data yet */ }
+
+            const sharedOpts = (yLabel, yColor, yCallback) => ({
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: color, boxWidth: 14, font: { size: 11 } } } },
+                scales: {
+                    yStd: { type: 'linear', position: 'left', grid: { color: gridC }, ticks: { color: yColor, callback: yCallback }, title: { display: true, text: yLabel, color: yColor } },
+                    x: { grid: { color: gridC }, ticks: { color: color, maxTicksLimit: 18 } }
+                }
+            });
+
+            // ---- Chart 1: Body Weight ----
+            if (charts.stdBodyWeight) charts.stdBodyWeight.destroy();
+            charts.stdBodyWeight = new Chart(document.getElementById('stdBodyWeightChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: 'Std Range (Max)', data: W36_BW_MAX, borderColor: 'transparent', backgroundColor: 'rgba(59,130,246,0.12)', fill: '+1', pointRadius: 0, tension: 0.4 },
+                        { label: 'Std Range (Min)', data: W36_BW_MIN, borderColor: 'transparent', backgroundColor: 'rgba(59,130,246,0.12)', fill: false, pointRadius: 0, tension: 0.4 },
+                        { label: 'Body Weight Std (g)', data: W36_BW_STD, borderColor: '#93c5fd', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, tension: 0.4 },
+                        ...(actBW.length ? [{ label: 'Actual Body Weight (g)', data: actBW, borderColor: '#f97316', backgroundColor: '#f97316', borderWidth: 2.5, pointRadius: 4, tension: 0.3 }] : [])
+                    ]
+                },
+                options: { ...sharedOpts('Body Weight (g)', '#3b82f6', v => v + 'g'), plugins: { legend: { labels: { color, filter: i => !i.text.includes('Range') } } } }
+            });
+
+            // ---- Chart 2: Egg Weight ----
+            if (charts.stdEggWeight) charts.stdEggWeight.destroy();
+            charts.stdEggWeight = new Chart(document.getElementById('stdEggWeightChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: 'Std Range (Max)', data: W36_EW_MAX, borderColor: 'transparent', backgroundColor: 'rgba(16,185,129,0.12)', fill: '+1', pointRadius: 0, tension: 0.4 },
+                        { label: 'Std Range (Min)', data: W36_EW_MIN, borderColor: 'transparent', backgroundColor: 'rgba(16,185,129,0.12)', fill: false, pointRadius: 0, tension: 0.4 },
+                        { label: 'Egg Weight Std (g)', data: W36_EW_STD, borderColor: '#6ee7b7', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, tension: 0.4 },
+                        ...(actEW.length ? [{ label: 'Actual Egg Weight (g)', data: actEW, borderColor: '#10b981', backgroundColor: '#10b981', borderWidth: 2.5, pointRadius: 4, tension: 0.3 }] : [])
+                    ]
+                },
+                options: { ...sharedOpts('Egg Weight (g)', '#10b981', v => v + 'g'), plugins: { legend: { labels: { color, filter: i => !i.text.includes('Range') } } } }
+            });
+
+            // ---- Chart 3: Water Consumption ----
+            if (charts.stdWater) charts.stdWater.destroy();
+            charts.stdWater = new Chart(document.getElementById('stdWaterChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: 'Std Range (Max)', data: W36_WC_MAX, borderColor: 'transparent', backgroundColor: 'rgba(56,189,248,0.12)', fill: '+1', pointRadius: 0, tension: 0.4 },
+                        { label: 'Std Range (Min)', data: W36_WC_MIN, borderColor: 'transparent', backgroundColor: 'rgba(56,189,248,0.12)', fill: false, pointRadius: 0, tension: 0.4 },
+                        { label: 'Water Std (L/bird/day)', data: W36_WC_STD, borderColor: '#7dd3fc', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, tension: 0.4 },
+                        ...(actWC.length ? [{ label: 'Actual Water (L/bird)', data: actWC, borderColor: '#38bdf8', backgroundColor: '#38bdf8', borderWidth: 2.5, pointRadius: 4, tension: 0.3 }] : [])
+                    ]
+                },
+                options: { ...sharedOpts('Water (L/bird/day)', '#38bdf8', v => v.toFixed(2) + 'L'), plugins: { legend: { labels: { color, filter: i => !i.text.includes('Range') } } } }
+            });
+
+            // ---- Chart 4: Feed Consumption ----
+            if (charts.stdFeed) charts.stdFeed.destroy();
+            charts.stdFeed = new Chart(document.getElementById('stdFeedChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: 'Std Range (Max)', data: W36_FC_MAX, borderColor: 'transparent', backgroundColor: 'rgba(251,146,60,0.12)', fill: '+1', pointRadius: 0, tension: 0.4 },
+                        { label: 'Std Range (Min)', data: W36_FC_MIN, borderColor: 'transparent', backgroundColor: 'rgba(251,146,60,0.12)', fill: false, pointRadius: 0, tension: 0.4 },
+                        { label: 'Feed Std (g/bird/day)', data: W36_FC_STD, borderColor: '#fdba74', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, tension: 0.4 },
+                        ...(actFC.length ? [{ label: 'Actual Feed (g/bird)', data: actFC, borderColor: '#fb923c', backgroundColor: '#fb923c', borderWidth: 2.5, pointRadius: 4, tension: 0.3 }] : [])
+                    ]
+                },
+                options: { ...sharedOpts('Feed (g/bird/day)', '#fb923c', v => v + 'g'), plugins: { legend: { labels: { color, filter: i => !i.text.includes('Range') } } } }
+            });
+
+            // Update summary cards with W-36 standard for current age
+            const currentAge = +document.getElementById('Age').value || 28;
+            const idx = W36_WEEKS.reduce((best, w, i) => Math.abs(w - currentAge) < Math.abs(W36_WEEKS[best] - currentAge) ? i : best, 0);
+            const tw = document.getElementById('target-water-val');
+            const te = document.getElementById('target-eggwt-val');
+            if (tw) tw.textContent = W36_WC_STD[idx].toFixed(3) + ' L';
+            if (te) te.textContent = W36_EW_STD[idx].toFixed(1) + ' g';
+        }
+
+        // ============================================================
+        // FEED OPTIMIZER
+        // ============================================================
+        function runOptimizer() {
+            const birds     = +document.getElementById('opt-birds').value || 5000;
+            const age       = +document.getElementById('opt-age').value || 28;
+            const temp      = +document.getElementById('opt-temp').value || 23;
+            const hum       = +document.getElementById('opt-hum').value || 60;
+            const fPrice    = +document.getElementById('opt-fprice').value || 260;
+            const ePrice    = +document.getElementById('opt-eprice').value || 30;
+            const breed     = document.getElementById('opt-breed').value || 'commercial';
+            const season    = document.getElementById('opt-season').value || 'spring';
+
+            // Base feed per bird for age bracket (g/bird/day)
+            let baseFeed = 90;
+            if (age < 20) baseFeed = 80;
+            else if (age <= 30) baseFeed = 95;
+            else if (age <= 45) baseFeed = 105;
+            else if (age <= 60) baseFeed = 108;
+            else baseFeed = 100;
+
+            // Env adjustments
+            let feedAdj = 0;
+            if (temp > 30) feedAdj -= 8;
+            else if (temp > 27) feedAdj -= 4;
+            else if (temp < 15) feedAdj += 6;
+            if (hum > 75) feedAdj -= 2;
+
+            const breedMult  = breed === 'commercial' ? 1.0 : 0.75;
+            const seasonMult = season === 'summer' ? 0.95 : season === 'winter' ? 1.05 : 1.0;
+
+            const optFeedPerBird = Math.max(75, Math.round((baseFeed + feedAdj) * breedMult * seasonMult));
+            const totalFeedKg    = (optFeedPerBird * birds / 1000).toFixed(1);
+
+            // Expected efficiency
+            let effBase = age < 20 ? 0 : age <= 45 ? 0.88 : age <= 60 ? 0.82 : 0.72;
+            if (temp > 28) effBase *= 0.9;
+            if (breed !== 'commercial') effBase *= 0.65;
+            const efficiency = Math.min(0.95, effBase);
+            const expectedEggs = Math.round(birds * efficiency);
+
+            // Financials
+            const dailyFeedCost = (optFeedPerBird * birds / 1000) * fPrice;
+            const dailyRevenue  = expectedEggs * ePrice;
+            const dailyProfit   = dailyRevenue - dailyFeedCost;
+
+            // Populate result cards
+            document.getElementById('opt-res-feed').textContent      = optFeedPerBird + ' g';
+            document.getElementById('opt-res-total-feed').textContent = totalFeedKg + ' kg';
+            document.getElementById('opt-res-eggs').textContent       = expectedEggs.toLocaleString() + ' eggs';
+            document.getElementById('opt-res-eff').textContent        = (efficiency * 100).toFixed(1) + '%';
+            document.getElementById('opt-res-cost').textContent       = 'PKR ' + Math.round(dailyFeedCost).toLocaleString();
+            document.getElementById('opt-res-rev').textContent        = 'PKR ' + Math.round(dailyRevenue).toLocaleString();
+            document.getElementById('opt-res-profit').textContent     = 'PKR ' + Math.round(dailyProfit).toLocaleString();
+            document.getElementById('opt-result-box').style.opacity   = '1';
+
+            // AI Insight text
+            const insightEl = document.getElementById('opt-ai-insight');
+            const insights = [];
+            if (temp > 28) insights.push('⚠️ High temperature is reducing feed intake — consider cooling ventilation.');
+            if (hum > 75) insights.push('💧 High humidity detected — improve air circulation to prevent disease.');
+            if (age > 60) insights.push('📉 Flock is in late-lay phase — consider culling to improve overall flock efficiency.');
+            if (breed !== 'commercial') insights.push('🐔 Indigenous breeds have lower FCR — supplement with protein-rich feed.');
+            insights.push(`✅ Optimal feed rate for current conditions: ${optFeedPerBird} g/bird/day.`);
+            insightEl.innerHTML = insights.map(i => `<div style="margin-bottom:6px; font-size:0.82rem;">${i}</div>`).join('');
+
+            // Feed comparison chart
+            const feedLevels = [optFeedPerBird - 15, optFeedPerBird - 8, optFeedPerBird, optFeedPerBird + 8, optFeedPerBird + 15];
+            const eggOutputs = feedLevels.map(f => {
+                const adjEff = Math.min(0.95, efficiency * (1 + (f - optFeedPerBird) / (optFeedPerBird * 4)));
+                return Math.round(birds * Math.max(0, adjEff));
+            });
+            const profits = feedLevels.map((f, i) => {
+                const cost = (f * birds / 1000) * fPrice;
+                const rev  = eggOutputs[i] * ePrice;
+                return Math.round(rev - cost);
+            });
+
+            const ctxOpt = document.getElementById('optChart').getContext('2d');
+            if (charts.opt) charts.opt.destroy();
+            charts.opt = new Chart(ctxOpt, {
+                type: 'bar',
+                data: {
+                    labels: feedLevels.map(f => f + 'g'),
+                    datasets: [
+                        {
+                            label: 'Eggs Produced',
+                            data: eggOutputs,
+                            backgroundColor: feedLevels.map(f => f === optFeedPerBird ? 'rgba(16,185,129,0.85)' : 'rgba(59,130,246,0.5)'),
+                            borderColor: feedLevels.map(f => f === optFeedPerBird ? '#10b981' : '#3b82f6'),
+                            borderWidth: 1,
+                            yAxisID: 'yEggs'
+                        },
+                        {
+                            label: 'Daily Profit (PKR)',
+                            data: profits,
+                            type: 'line',
+                            borderColor: '#fbbf24',
+                            backgroundColor: 'rgba(251,191,36,0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            yAxisID: 'yProfit',
+                            pointRadius: feedLevels.map(f => f === optFeedPerBird ? 8 : 4),
+                            pointBackgroundColor: feedLevels.map(f => f === optFeedPerBird ? '#fbbf24' : 'transparent')
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: 'var(--text-muted)', font: { size: 11 } } } },
+                    scales: {
+                        yEggs: {
+                            type: 'linear', position: 'left',
+                            ticks: { color: '#3b82f6', callback: v => v.toLocaleString() },
+                            grid: { color: 'rgba(255,255,255,0.06)' }
+                        },
+                        yProfit: {
+                            type: 'linear', position: 'right',
+                            ticks: { color: '#fbbf24', callback: v => 'PKR ' + v.toLocaleString() },
+                            grid: { drawOnChartArea: false }
+                        },
+                        x: { ticks: { color: 'var(--text-muted)' }, grid: { display: false } }
+                    }
+                }
+            });
+
+            // 7-day feed plan
+            const tbody = document.getElementById('opt-plan-tbody');
+            const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+            tbody.innerHTML = days.map((day, i) => {
+                const variance = (Math.random() - 0.5) * 4;
+                const f = Math.round(optFeedPerBird + variance);
+                const tk = (f * birds / 1000).toFixed(1);
+                const eggs = Math.round(birds * Math.min(0.95, efficiency * (1 + variance / (optFeedPerBird * 4))));
+                const profit = Math.round(eggs * ePrice - (f * birds / 1000) * fPrice);
+                const isToday = i === new Date().getDay() - 1;
+                return `<tr style="border-bottom:1px solid rgba(255,255,255,0.05); font-size:0.85rem; ${isToday ? 'background:rgba(251,191,36,0.05);' : ''}">
+                    <td style="padding:0.8rem; font-weight:${isToday ? '700' : '400'}; color:${isToday ? 'var(--primary)' : 'var(--text-main);'}">${day}${isToday ? ' ✦' : ''}</td>
+                    <td>${f} g</td>
+                    <td>${tk} kg</td>
+                    <td style="color:var(--success); font-weight:700;">${eggs.toLocaleString()}</td>
+                    <td style="color:${profit > 0 ? 'var(--success)' : 'var(--danger)'}; font-weight:700;">PKR ${profit.toLocaleString()}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        // Init KPI bar from input on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const birdsEl = document.getElementById('Amount_of_chicken');
+            if (birdsEl) {
+                const kpiBirds = document.getElementById('kpi-birds');
+                if (kpiBirds) kpiBirds.textContent = (+birdsEl.value).toLocaleString();
+                birdsEl.addEventListener('input', () => {
+                    if (kpiBirds) kpiBirds.textContent = (+birdsEl.value).toLocaleString();
+                });
+            }
+        });
     </script>
 </body>
 </html>

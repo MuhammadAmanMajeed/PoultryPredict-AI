@@ -184,6 +184,7 @@ class EggProductionPredictor:
         print(f"R-Squared (R2) Score:     {r2_score(y_test, y_pred):.4f}")
         print("--------------------------------------\n")
 
+
         print("Professional Validation Suite Completed")
 
     def save_model(self):

@@ -21,9 +21,11 @@ app.secret_key = os.environ.get('SECRET_KEY', 'dev-fallback-key-change-in-produc
 CORS(app)
 
 # Ensure models directory exists for build process
-os.makedirs('models', exist_ok=True)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODELS_DIR = os.path.join(BASE_DIR, 'models')
+os.makedirs(MODELS_DIR, exist_ok=True)
 
-MODEL_PATH = 'models/egg_production_model.pkl'
+MODEL_PATH = os.path.join(MODELS_DIR, 'egg_production_model.pkl')
 model_data = None
 
 def load_model():
@@ -62,7 +64,7 @@ def init_db():
         )''')
         conn.execute('''CREATE TABLE IF NOT EXISTS daily_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT, date DATE, chickens INTEGER, eggs INTEGER, 
-            feed_kg REAL, mortality INTEGER, temp REAL, humidity REAL, ammonia REAL, user_id INTEGER
+            feed_kg REAL, mortality INTEGER, temp REAL, humidity REAL, ammonia REAL, user_id INTEGER, bird_weight REAL
         )''')
         conn.execute('''CREATE TABLE IF NOT EXISTS market_prices (
             id INTEGER PRIMARY KEY AUTOINCREMENT, date DATE, egg_price REAL, feed_price REAL
@@ -75,6 +77,18 @@ def init_db():
         )''')
         try:
             conn.execute('ALTER TABLE users ADD COLUMN email TEXT UNIQUE')
+        except sqlite3.OperationalError:
+            pass
+        try:
+            conn.execute('ALTER TABLE daily_logs ADD COLUMN bird_weight REAL')
+        except sqlite3.OperationalError:
+            pass
+        try:
+            conn.execute('ALTER TABLE daily_logs ADD COLUMN water_liters REAL')
+        except sqlite3.OperationalError:
+            pass
+        try:
+            conn.execute('ALTER TABLE daily_logs ADD COLUMN egg_weight_g REAL')
         except sqlite3.OperationalError:
             pass
         conn.commit()
@@ -163,6 +177,9 @@ def calculate_economics(chickens, prediction, breed, age, system_type, feed_per_
 
 def get_feature_importance():
     """Return global feature importance from the trained model."""
+    global model_data
+    if model_data is None:
+        load_model()
     if model_data is None:
         return []
     model = model_data['model']
@@ -176,6 +193,9 @@ def get_feature_importance():
 def get_prediction_contributions(input_data):
     """Calculate per-feature contribution explaining a single prediction.
     Shows which inputs helped vs hurt production — 'How the AI thought'."""
+    global model_data
+    if model_data is None:
+        load_model()
     if model_data is None or not hasattr(model_data['model'], 'feature_importances_'):
         return []
     features = model_data['feature_names']
@@ -287,6 +307,9 @@ def validate_log_input(data):
         'temp': (0, 50, 22),
         'humidity': (0, 100, 60),
         'ammonia': (0, 200, 10),
+        'bird_weight': (0, 10000, 0),
+        'water_liters': (0, 100000, 0),
+        'egg_weight_g': (0, 200, 0),
     }
     for field, (mn, mx, default) in numeric_fields.items():
         raw = data.get(field, default)
@@ -393,6 +416,9 @@ def serve_plots(filename):
 def predict():
     if 'logged_in' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
+    global model_data
+    if model_data is None:
+        load_model()
     if model_data is None:
         return jsonify({'error': 'Model not loaded. Run main.py first.'}), 503
     try:
@@ -499,6 +525,9 @@ def generate_recommendations(data, prediction, profit=0):
 def batch_predict():
     if 'logged_in' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
+    global model_data
+    if model_data is None:
+        load_model()
     if model_data is None:
         return jsonify({'error': 'Model not loaded'}), 503
     try:
@@ -578,11 +607,12 @@ def add_log():
             db.execute('INSERT INTO alerts (timestamp, type, message, user_id) VALUES (?, ?, ?, ?)',
                        (datetime.datetime.now(), a_type, msg, session.get('user_id')))
 
-        db.execute('''INSERT INTO daily_logs (date, chickens, eggs, feed_kg, mortality, temp, humidity, ammonia, user_id)
-                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+        db.execute('''INSERT INTO daily_logs (date, chickens, eggs, feed_kg, mortality, temp, humidity, ammonia, user_id, bird_weight, water_liters, egg_weight_g)
+                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
                    (data['date'], int(data['chickens']), int(data['eggs']), data['feed_kg'],
                     int(data['mortality']), data['temp'], data['humidity'], data['ammonia'],
-                    session.get('user_id')))
+                    session.get('user_id'), data.get('bird_weight', 0),
+                    data.get('water_liters', 0), data.get('egg_weight_g', 0)))
         db.commit()
         db.close()
         return jsonify({'success': True, 'message': 'Log saved successfully.'})
@@ -672,6 +702,9 @@ def reset_data():
 @app.route('/api/model_stats', methods=['GET'])
 def model_stats():
     """Return ML model performance metrics for examiner/dashboard display."""
+    global model_data
+    if model_data is None:
+        load_model()
     if model_data is None:
         return jsonify({'error': 'Model not loaded'}), 503
     try:
@@ -702,6 +735,9 @@ def feed_optimizer():
     """Find the optimal feed amount (g/bird) that maximizes profit for given conditions."""
     if 'logged_in' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
+    global model_data
+    if model_data is None:
+        load_model()
     if model_data is None:
         return jsonify({'error': 'Model not loaded'}), 503
     try:
@@ -766,22 +802,31 @@ def chart_data():
     try:
         db = get_db_connection()
         rows = db.execute(
-            '''SELECT date, eggs, feed_kg, mortality, temp, humidity, ammonia
+            '''SELECT date, eggs, feed_kg, mortality, temp, humidity, ammonia, bird_weight, water_liters, egg_weight_g, chickens
                FROM daily_logs WHERE user_id = ? ORDER BY date ASC LIMIT 60''',
             (session.get('user_id'),)
         ).fetchall()
         db.close()
 
         data = [dict(r) for r in rows]
+
+        def safe(r, key):
+            v = r.get(key)
+            return round(float(v), 4) if v is not None and v != '' else 0
+
         return jsonify({
             'success': True,
             'labels': [r['date'] for r in data],
-            'eggs': [r['eggs'] for r in data],
-            'feed_kg': [r['feed_kg'] for r in data],
-            'mortality': [r['mortality'] for r in data],
-            'temperature': [r['temp'] for r in data],
-            'humidity': [r['humidity'] for r in data],
-            'ammonia': [r['ammonia'] for r in data],
+            'eggs': [safe(r, 'eggs') for r in data],
+            'feed_kg': [safe(r, 'feed_kg') for r in data],
+            'mortality': [safe(r, 'mortality') for r in data],
+            'temperature': [safe(r, 'temp') for r in data],
+            'humidity': [safe(r, 'humidity') for r in data],
+            'ammonia': [safe(r, 'ammonia') for r in data],
+            'bird_weight': [safe(r, 'bird_weight') for r in data],
+            'water_liters': [safe(r, 'water_liters') for r in data],
+            'egg_weight_g': [safe(r, 'egg_weight_g') for r in data],
+            'chickens': [safe(r, 'chickens') for r in data],
             'total_records': len(data)
         })
     except Exception as e:
@@ -878,7 +923,7 @@ def retrain_model():
         )
 
         features = model_data['feature_names']
-        base_path = 'Egg_Production_Large.csv'
+        base_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Egg_Production_Large.csv')
         if os.path.exists(base_path):
             base_df = pd.read_csv(base_path)
             base_df['Feed_per_Chicken'] = base_df['Amount_of_Feeding'] / base_df['Amount_of_chicken']
