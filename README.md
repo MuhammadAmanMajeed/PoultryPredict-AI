@@ -117,7 +117,7 @@ The app will start on `http://localhost:5050`.
 ## 👤 Author
 
 **Muhammad Aman Majeed**
-Registration No: 2022-ag-6211
+
 
 ---
 
